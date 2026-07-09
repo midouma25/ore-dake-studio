@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #0D0D0D;
+    --bg-secondary: #1A1A1A;
+    --bg-tertiary: #2A2A2A;
+    --accent-primary: #00FF88;
+    --accent-secondary: #00D4FF;
+    --accent-warning: #FFB800;
+    --accent-danger: #FF4444;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A0A0A0;
+    --border-color: #333333;
+    
+    /* Spectrogram Mapping */
+    --waveform-color: #00FF88;
+    --spectrogram-low: #1a0000;
+    --spectrogram-mid: #ff4400;
+    --spectrogram-high: #ffff00;
+  }
+
+  body {
+    @apply bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased font-sans;
+    overflow-x: hidden;
+  }
+}
