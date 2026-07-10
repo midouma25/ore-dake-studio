@@ -3,8 +3,10 @@ const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-
+const path = require('path');
 // Imports
+
+const outputsPath = path.resolve(__dirname, '../ai-engine/temp_workspace/demucs_out/htdemucs/safe_input');
 const aiJobsRouter = require('./src/routes/aiJobs');
 const { initWebSocket } = require('./src/services/websocket');
 const { initWorker } = require('./src/workers/aiWorker');
@@ -21,11 +23,12 @@ app.use(express.json());
 
 // Routes
 app.use('/api/ai', aiJobsRouter);
+// توزيع الملفات المضغوطة للمتصفح
 
-// ...
+app.use('/outputs', express.static(outputsPath));
 app.use('/api/upload', uploadRouter); // أضف هذا مع مسارات الـ API
 app.use('/uploads', express.static('../uploads'));
-
+console.log("Serving static files from:", outputsPath);
 
 // Init Services
 initWebSocket(io);

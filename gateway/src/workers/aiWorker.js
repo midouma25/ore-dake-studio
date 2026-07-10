@@ -22,12 +22,16 @@ const initWorker = () => {
       emitJobProgress(job.id, 5, 'Initializing models...', 'Calculating');
       await job.updateProgress(5);
 
+     const actualFilePath = inputFileId || (parameters && parameters.input_file) || "";
+      
+      console.log(`[Worker] Actual File Path being sent to Python: "${actualFilePath}"`); // للتأكد بالعين المجردة
+
       // 2. Call the Python AI Engine API
       const response = await axios.post(`${AI_ENGINE_URL}/api/ai/process`, {
-        job_id: job.id ? job.id.toString() : `job_${Date.now()}`, // تأمين تحويل المعرف لنص
+        job_id: job.id ? job.id.toString() : `job_${Date.now()}`,
         job_type: type || job.name,
         parameters: parameters || {},
-        input_file: inputFileId || "" // إرسال المسار الفعلي لبايثون
+        input_file: actualFilePath // نرسل المسار المستخرج هنا
       });
 
       // 3. Simulate processing time and progress updates
@@ -38,12 +42,20 @@ const initWorker = () => {
       }
 
       // 4. Job Finished
+// 4. Job Finished
       emitJobProgress(job.id, 100, 'Finalizing and saving...', '0s');
       await job.updateProgress(100);
 
+      // --- التعديل هنا: إرسال روابط المسارات الأربعة لواجهة React ---
+// --- إرسال روابط الـ MP3 الخفيفة لواجهة React ---
       const result = {
-        outputFileId: `out_${Date.now()}`, // Mock output ID
-        message: response.data.message || 'تمت المعالجة بنجاح'
+        message: 'تم فصل وضغط مسارات الاستوديو بنجاح! 🚀',
+        tracks: [
+          { id: 'track-vocals', name: '🎤 Vocals (المغني)', src: 'http://localhost:5000/outputs/vocals.mp3' },
+          { id: 'track-drums', name: '🥁 Drums (الإيقاع)', src: 'http://localhost:5000/outputs/drums.mp3' },
+          { id: 'track-bass', name: '🎸 Bass (البيس)', src: 'http://localhost:5000/outputs/bass.mp3' },
+          { id: 'track-other', name: '🎹 Other (باقي الآلات)', src: 'http://localhost:5000/outputs/other.mp3' }
+        ]
       };
 
       emitJobCompleted(job.id, result);

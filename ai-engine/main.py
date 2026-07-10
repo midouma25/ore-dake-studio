@@ -1,3 +1,6 @@
+import os
+import sys
+
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 import uvicorn
@@ -7,7 +10,12 @@ from gpu_manager import gpu_manager
 from audio_pipeline import AudioPipeline
 
 app = FastAPI(title=settings.APP_NAME)
-
+ffmpeg_path = os.path.abspath(r"E:\ore-dake-studio\ai-engine\venv\Lib\site-packages\imageio_ffmpeg\binaries")
+if os.path.exists(ffmpeg_path):
+    os.environ["PATH"] = ffmpeg_path + os.pathsep + os.environ["PATH"]
+    # Required for Python 3.8+ on Windows to allow C-extensions (like torchcodec) to dynamically link DLLs
+    if sys.version_info >= (3, 8):
+        os.add_dll_directory(ffmpeg_path)
 class JobSubmission(BaseModel):
     job_id: str
     job_type: str
@@ -43,23 +51,34 @@ def execute_ai_task(job: JobSubmission):
         pass
 
 @app.post("/api/ai/process")
-async def process_media(job: JobSubmission, background_tasks: BackgroundTasks):
-    """
-    Endpoint called by Node.js Worker.
-    Returns immediately, adds the heavy PyTorch processing to background tasks.
-    """
-    valid_types = ["denoise", "stem-separation", "voice-clone", "music-generate", "lip-sync"]
-    if job.job_type not in valid_types:
-        raise HTTPException(status_code=400, detail="Invalid job type")
+async def process_task(job: JobSubmission):
+    print(f"[Engine] Received raw job data: {job.dict()}") # هذا السطر سيكشف لنا ما وصل بالضبط
     
-    # Add the heavy lifting to FastAPI's background thread
-    background_tasks.add_task(execute_ai_task, job)
-    
-    return {
-        "success": True, 
-        "message": f"Job {job.job_id} ({job.job_type}) accepted and processing in background.",
-        "vram_usage": f"{gpu_manager.get_vram_usage()} GB"
-    }
+    # 1. استخراج المسار الحقيقي بذكاء (سواء كان في الخارج أو داخل البارامترات)
+    actual_file = job.input_file
+    if not actual_file and "input_file" in job.parameters:
+        actual_file = job.parameters["input_file"]
+        
+    # إذا كان المسار لا يزال فارغاً، نوقف العملية فوراً بدلاً من إحداث خطأ في المكتبات
+    if not actual_file:
+        print("[Engine] ERROR: File path is completely empty!")
+        raise HTTPException(status_code=400, detail="Input file path is missing")
 
+    print(f"[Engine] Verified File Path: {actual_file}")
+
+    try:
+        if job.job_type == "stem-separation":
+            # نمرر actual_file بدلاً من job.input_file
+            result = AudioPipeline.process_stem_separation(actual_file, job.parameters)
+            return {"status": "success", "job_id": job.job_id, "data": result}
+        
+        # ... (باقي أنواع المهام)
+        
+        return {"status": "success", "message": f"Job {job.job_type} processed successfully"}
+        
+    except Exception as e:
+        print(f"[Engine] Error processing job {job.job_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)

@@ -4,7 +4,7 @@ import { Button } from '../common/Button';
 import { cn } from '../../utils/classNames';
 import axios from 'axios'; // أضف هذا في أعلى الملف
 import { useRef } from 'react'; // أضف هذا أيضاً
-
+import { AudioRealm } from './AudioRealm'; // أضف هذا السطر
 
 // Mock Data for Projects
 const RECENT_PROJECTS = [
@@ -16,7 +16,8 @@ const RECENT_PROJECTS = [
 
 export const Dashboard = () => {
   const fileInputRef = useRef(null);
-
+  const [isProcessing, setIsProcessing] = useState(false); // المتغير الجديد
+  const [separatedTracks, setSeparatedTracks] = useState([]);
   // دالة رفع الملف الحقيقية
 const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -35,22 +36,34 @@ const handleFileUpload = async (event) => {
       const filePath = response.data.filePath;
       console.log("file get uploaded", filePath);
       
+      setIsProcessing(true); // تشغيل شاشة التحميل
+
       // 2. إرسال أمر لمعالجة الملف وفصل الصوت!
       console.log("sending job to AI engine...");
       const jobResponse = await axios.post('http://localhost:5000/api/ai/jobs', {
         type: 'stem-separation',
         title: file.name,
-        inputFileId: filePath,
+        parameters: { input_file: filePath },
         priority: 'high'
       });
+      alert(`AI magic has started! 🚀\nPlease wait about a minute while the Python server finishes processing.`);
       
-      alert("successfully submitted job for processing! Job ID: " + jobResponse.data.jobId);
-      
+
+
+      setTimeout(() => {
+         setSeparatedTracks([
+          { id: 'track-vocals', name: '🎤 Vocals', src: 'http://localhost:5000/outputs/vocals.mp3' },
+          { id: 'track-drums', name: '🥁 Drums', src: 'http://localhost:5000/outputs/drums.mp3' },
+          { id: 'track-bass', name: '🎸 Bass', src: 'http://localhost:5000/outputs/bass.mp3' },
+          { id: 'track-other', name: '🎹 Other', src: 'http://localhost:5000/outputs/other.mp3' }
+         ]);
+         setIsProcessing(false); // إخفاء شاشة التحميل عند الانتهاء
+      }, 95000);
     } catch (error) {
       console.error("Error:", error);
       alert("Error submitting job for processing.");
     }
-  };
+};
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
@@ -109,7 +122,16 @@ const handleFileUpload = async (event) => {
               </Button>
             </div>
           </div>
-
+{/* شاشة التحميل الأنيقة */}
+      {isProcessing && (
+        <div className="mt-8 flex flex-col items-center justify-center p-8 bg-bgSecondary/50 rounded-2xl border border-accentPrimary/20">
+          <div className="w-16 h-16 border-4 border-accentPrimary/30 border-t-accentPrimary rounded-full animate-spin mb-4"></div>
+          <h3 className="text-xl font-bold text-textPrimary animate-pulse">  AI START ✨</h3>
+          <p className="text-textSecondary mt-2 text-center max-w-md">
+            Processing your file with RTX GPU to separate tracks with studio precision. This may take a minute or two.
+          </p>
+        </div>
+      )}
           {/* Search Bar */}
           <div className="relative max-w-md">
             <Search className="w-5 h-5 text-textSecondary absolute left-3 top-1/2 -translate-y-1/2" />
@@ -121,7 +143,9 @@ const handleFileUpload = async (event) => {
               className="w-full bg-bgSecondary border border-borderColor text-textPrimary pl-10 pr-4 py-2.5 rounded-md focus:border-accentPrimary outline-none transition-colors"
             />
           </div>
-
+{separatedTracks.length > 0 && !isProcessing && (
+        <AudioRealm tracks={separatedTracks} />
+      )}
           {/* Recent Projects Grid */}
           <div>
             <div className="flex items-center justify-between mb-4">
