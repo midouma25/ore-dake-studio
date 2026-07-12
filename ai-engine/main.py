@@ -16,6 +16,7 @@ if os.path.exists(ffmpeg_path):
     # Required for Python 3.8+ on Windows to allow C-extensions (like torchcodec) to dynamically link DLLs
     if sys.version_info >= (3, 8):
         os.add_dll_directory(ffmpeg_path)
+
 class JobSubmission(BaseModel):
     job_id: str
     job_type: str
@@ -52,7 +53,7 @@ def execute_ai_task(job: JobSubmission):
 
 @app.post("/api/ai/process")
 async def process_task(job: JobSubmission):
-    print(f"[Engine] Received raw job data: {job.dict()}") # هذا السطر سيكشف لنا ما وصل بالضبط
+    print(f"[Engine] Received raw job data: {job.dict()}") 
     
     # 1. استخراج المسار الحقيقي بذكاء (سواء كان في الخارج أو داخل البارامترات)
     actual_file = job.input_file
@@ -67,12 +68,14 @@ async def process_task(job: JobSubmission):
     print(f"[Engine] Verified File Path: {actual_file}")
 
     try:
-        if job.job_type == "stem-separation":
-            # نمرر actual_file بدلاً من job.input_file
+        # 🌟 تمت إضافة مسار التنظيف العميق هنا 🌟
+        if job.job_type == "denoise":
+            result = AudioPipeline.process_deep_clean(actual_file, job.parameters)
+            return {"status": "success", "job_id": job.job_id, "data": result}
+            
+        elif job.job_type == "stem-separation":
             result = AudioPipeline.process_stem_separation(actual_file, job.parameters)
             return {"status": "success", "job_id": job.job_id, "data": result}
-        
-        # ... (باقي أنواع المهام)
         
         return {"status": "success", "message": f"Job {job.job_type} processed successfully"}
         

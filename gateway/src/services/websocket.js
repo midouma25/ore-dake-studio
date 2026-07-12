@@ -26,19 +26,22 @@ const initWebSocket = (socketIoInstance) => {
 // Functions to be called by the Worker to broadcast updates
 const emitJobProgress = (jobId, progress, stage, eta) => {
   if (io) {
-    io.to(`job:${jobId}`).emit('job:progress', { jobId, progress, stage, eta });
+    // بث عام لتحديثات التقدم
+    io.emit('jobProgress', { jobId, progress, stage, eta });
   }
 };
 
 const emitJobCompleted = (jobId, result) => {
   if (io) {
-    io.to(`job:${jobId}`).emit('job:completed', { jobId, result });
+    // بث عام باكتمال المهمة
+    io.emit('jobCompleted', { jobId, result });
   }
 };
 
 const emitJobFailed = (jobId, error) => {
   if (io) {
-    io.to(`job:${jobId}`).emit('job:failed', { jobId, error });
+    // بث عام في حال الفشل
+    io.emit('jobFailed', { jobId, error });
   }
 };
 

@@ -26,8 +26,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // مسار استقبال الملف
-router.post('/', upload.single('audioFile'), (req, res) => {
-    if (!req.file) {
+router.post('/', upload.single('file'), (req, res) => {
+        if (!req.file) {
         return res.status(400).json({ success: false, message: 'لم يتم رفع أي ملف' });
     }
     

@@ -11,51 +11,53 @@ const initWorker = () => {
   const worker = new Worker('ai-processing', async (job) => {
     console.log(`[Worker] Processing Job ${job.id} of type ${job.name}`);
     
-    // استخراج مسار الملف والمتغيرات من بيانات المهمة
     const { type, parameters, inputFileId } = job.data;
+    const currentJobType = type || job.name;
     
-    // سطر مهم جداً للتحقق (Debugging) لنرى هل المسار وصل للـ Worker أم لا
     console.log(`[Worker] File Path to process: ${inputFileId}`); 
     
     try {
-      // 1. Initial Progress
       emitJobProgress(job.id, 5, 'Initializing models...', 'Calculating');
       await job.updateProgress(5);
 
-     const actualFilePath = inputFileId || (parameters && parameters.input_file) || "";
+      const actualFilePath = inputFileId || (parameters && parameters.input_file) || "";
       
-      console.log(`[Worker] Actual File Path being sent to Python: "${actualFilePath}"`); // للتأكد بالعين المجردة
+      console.log(`[Worker] Actual File Path being sent to Python: "${actualFilePath}"`);
 
-      // 2. Call the Python AI Engine API
       const response = await axios.post(`${AI_ENGINE_URL}/api/ai/process`, {
         job_id: job.id ? job.id.toString() : `job_${Date.now()}`,
-        job_type: type || job.name,
+        job_type: currentJobType,
         parameters: parameters || {},
-        input_file: actualFilePath // نرسل المسار المستخرج هنا
+        input_file: actualFilePath
       });
 
-      // 3. Simulate processing time and progress updates
       for (let i = 10; i <= 90; i += 20) {
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Fake delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
         emitJobProgress(job.id, i, `Processing stage ${i/10}...`, `${100 - i}s`);
         await job.updateProgress(i);
       }
 
-      // 4. Job Finished
-// 4. Job Finished
       emitJobProgress(job.id, 100, 'Finalizing and saving...', '0s');
       await job.updateProgress(100);
 
-      // --- التعديل هنا: إرسال روابط المسارات الأربعة لواجهة React ---
-// --- إرسال روابط الـ MP3 الخفيفة لواجهة React ---
+      let finalTracks = [];
+      
+      if (currentJobType === 'denoise') {
+         finalTracks = [
+           { id: 'track-clean', name: '🎙️ Studio Enhanced (AI)', src: 'http://localhost:5000/outputs/safe_input_clean.flac', type: 'cleaned' }
+         ];
+      } else {
+         finalTracks = [
+           { id: 'track-vocals', name: '🎤 Vocals', src: 'http://localhost:5000/outputs/vocals.flac' },
+           { id: 'track-drums', name: '🥁 Drums ', src: 'http://localhost:5000/outputs/drums.flac' },
+           { id: 'track-bass', name: '🎸 Bass ', src: 'http://localhost:5000/outputs/bass.flac' },
+           { id: 'track-other', name: '🎹 Other ', src: 'http://localhost:5000/outputs/other.flac' }
+         ];
+      }
+
       const result = {
-        message: 'تم فصل وضغط مسارات الاستوديو بنجاح! 🚀',
-        tracks: [
-          { id: 'track-vocals', name: '🎤 Vocals (المغني)', src: 'http://localhost:5000/outputs/vocals.mp3' },
-          { id: 'track-drums', name: '🥁 Drums (الإيقاع)', src: 'http://localhost:5000/outputs/drums.mp3' },
-          { id: 'track-bass', name: '🎸 Bass (البيس)', src: 'http://localhost:5000/outputs/bass.mp3' },
-          { id: 'track-other', name: '🎹 Other (باقي الآلات)', src: 'http://localhost:5000/outputs/other.mp3' }
-        ]
+        message: currentJobType === 'denoise' ? 'تم إعادة بناء الصوت وتنقيته بجودة الاستوديو الأسطورية! 🎙️✨' : 'تم فصل وضغط مسارات الاستوديو بنجاح! 🚀',
+        tracks: finalTracks
       };
 
       emitJobCompleted(job.id, result);
@@ -64,11 +66,11 @@ const initWorker = () => {
     } catch (error) {
       console.error(`[Worker] Job ${job.id} failed:`, error.message);
       emitJobFailed(job.id, error.message);
-      throw error; // Let BullMQ handle retries
+      throw error; 
     }
   }, { 
     connection,
-    concurrency: 5 // Process up to 5 jobs simultaneously
+    concurrency: 5 
   });
 
   worker.on('failed', (job, err) => {

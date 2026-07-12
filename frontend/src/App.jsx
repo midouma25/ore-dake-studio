@@ -10,11 +10,10 @@ import { EffectWindow } from './components/audio-realm/effects-rack/EffectWindow
 import { Dashboard } from './components/dashboard/Dashboard';
 import { SharedLibrary } from './components/shared-library/SharedLibrary';
 
-// Audio Realm Components
-import { SmartAudioTimeline } from './components/audio-realm/timeline/SmartAudioTimeline';
-import { EffectsRack } from './components/audio-realm/effects-rack/EffectsRack';
+// المحطة الفضائية الصوتية التي تجمع كل شيء (AI Rack + Timeline + Effects Rack)
+import { AudioWorkspace } from './components/audio-realm/AudioWorkspace';
 
-// Video Realm Components (Placeholders/Imports)
+// Video Realm Components
 import { EmotionVideoGenerator } from './components/video-realm/emotion-gen/EmotionVideoGenerator';
 import { LipSyncPanel } from './components/video-realm/lip-sync/LipSyncPanel';
 
@@ -36,18 +35,12 @@ function App() {
               {/* Home / Dashboard */}
               <Route path="/" element={<Dashboard />} />
 
-              {/* Audio Realm */}
-              <Route path="/audio" element={
-                <div className="flex w-full h-full overflow-hidden">
-                  <SmartAudioTimeline />
-                  <EffectsRack />
-                </div>
-              } />
+              {/* Audio Realm - نمرر المحطة الصوتية الشاملة مباشرة هنا */}
+              <Route path="/audio" element={<AudioWorkspace />} />
 
               {/* Video Realm */}
               <Route path="/video" element={
                 <div className="flex w-full h-full overflow-hidden">
-                  {/* You can toggle between Emotion Gen and LipSync using inner state or sub-routes later */}
                   <EmotionVideoGenerator />
                 </div>
               } />
