@@ -2,7 +2,8 @@ import os
 
 def generate_code_report(directory, output_filename="project_structure.md"):
     # المجلدات والملفات التي سيتم تجاهلها (لتجنب استخراج ملفات ضخمة أو غير هامة)
-    ignore_dirs = {'.git', 'node_modules', '__pycache__', 'venv', 'env', '.next', 'build', 'dist'}
+# إضافة .venv إلى القائمة
+    ignore_dirs = {'.git', 'node_modules', '__pycache__', 'venv', '.venv', 'env', '.next', 'build', 'dist'}
     ignore_exts = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.pdf', '.zip', '.exe', '.pyc', '.mp4'}
 
     with open(output_filename, 'w', encoding='utf-8') as f:
