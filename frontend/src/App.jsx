@@ -6,7 +6,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { BottomBar } from './components/layout/BottomBar';
 import { EffectWindow } from './components/audio-realm/effects-rack/EffectWindow';
 
-// Main Pages
+// Main Page   s
 import { Dashboard } from './components/dashboard/Dashboard';
 import { SharedLibrary } from './components/shared-library/SharedLibrary';
 
