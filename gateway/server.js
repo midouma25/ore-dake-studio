@@ -5,6 +5,8 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 const path = require('path');
 
+  // أضف هذا السطر مع استدعاءات الملفات في الأعلى
+const authRoutes = require('./routes/authRoutes');
 const outputsPath = path.resolve(__dirname, '../ai-engine/temp_workspace/demucs_out/mdx_extra/safe_input');
 const aiJobsRouter = require('./src/routes/aiJobs');
 const { initWebSocket } = require('./src/services/websocket');
@@ -49,3 +51,17 @@ const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(`Gateway running on port ${PORT}`);
 });
+
+const mongoose = require('mongoose');
+require('dotenv').config(); // للتأكد من قراءة ملف .env
+
+// رابط الاتصال بقاعدة البيانات (يفضل وضعه في ملف .env)
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/oredake_studio';
+
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ has connected to MongoDB successfully'))
+  .catch((err) => console.error('❌ Error connecting to MongoDB:', err));
+
+
+// أضف هذا السطر بعد تعريف app.use(express.json())
+app.use('/api/auth', authRoutes);
