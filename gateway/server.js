@@ -2,16 +2,24 @@ const express = require('express');
 const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const mongoose = require('mongoose'); 
 require('dotenv').config();
 const path = require('path');
 
-  // أضف هذا السطر مع استدعاءات الملفات في الأعلى
-const authRoutes = require('./routes/authRoutes');
-const outputsPath = path.resolve(__dirname, '../ai-engine/temp_workspace/demucs_out/mdx_extra/safe_input');
+// 1. الاتصال بقاعدة البيانات
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/oredake_studio';
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ Connected to MongoDB successfully'))
+  .catch((err) => console.error('❌ Error connecting to MongoDB:', err));
+
+// 2. استدعاءات المسارات 
+const authRoutes = require('./src/routes/authRoutes');
 const aiJobsRouter = require('./src/routes/aiJobs');
+const uploadRoutes = require('./src/routes/upload'); // تم التأكد من الاسم هنا
+
 const { initWebSocket } = require('./src/services/websocket');
 const { initWorker } = require('./src/workers/aiWorker');
-const uploadRouter = require('./src/routes/upload'); 
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -21,11 +29,11 @@ const io = new Server(httpServer, {
   }
 });
 
-// Middleware
+// 3. إعدادات الـ Middleware
 app.use(cors());
 app.use(express.json());
 
-// 🌟 مسار سري لاستقبال التقدم من بايثون وبثه للواجهة 🌟
+// 4. مسار سري لاستقبال التقدم من بايثون وبثه للواجهة
 app.post('/api/internal/progress', (req, res) => {
   const { message } = req.body;
   if (message) {
@@ -34,16 +42,17 @@ app.post('/api/internal/progress', (req, res) => {
   res.sendStatus(200);
 });
 
-// Routes
+// 5. ربط المسارات الأساسية (API Routes)
+app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiJobsRouter);
+app.use('/api/upload', uploadRoutes); 
 
-// توزيع الملفات المضغوطة للمتصفح
+// 6. الملفات الثابتة (Static Files)
+const outputsPath = path.resolve(__dirname, '../ai-engine/temp_workspace/demucs_out/mdx_extra/safe_input');
 app.use('/outputs', express.static(outputsPath));
-app.use('/api/upload', uploadRouter); 
-app.use('/uploads', express.static('../uploads'));
-console.log("Serving static files from:", outputsPath);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Init Services
+// 7. تشغيل الخدمات
 initWebSocket(io);
 initWorker(); // Start processing the queue
 
@@ -51,17 +60,3 @@ const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(`Gateway running on port ${PORT}`);
 });
-
-const mongoose = require('mongoose');
-require('dotenv').config(); // للتأكد من قراءة ملف .env
-
-// رابط الاتصال بقاعدة البيانات (يفضل وضعه في ملف .env)
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/oredake_studio';
-
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ has connected to MongoDB successfully'))
-  .catch((err) => console.error('❌ Error connecting to MongoDB:', err));
-
-
-// أضف هذا السطر بعد تعريف app.use(express.json())
-app.use('/api/auth', authRoutes);

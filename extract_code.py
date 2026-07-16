@@ -1,6 +1,6 @@
 import os
 
-def generate_code_report(directory, output_filename="project_structure.md"):
+def generate_code_report(directory, output_filename="project_structure1.md"):
     # المجلدات والملفات التي سيتم تجاهلها (لتجنب استخراج ملفات ضخمة أو غير هامة)
 # إضافة .venv إلى القائمة
     ignore_dirs = {'.git', 'node_modules', '__pycache__', 'venv', '.venv', 'env', '.next', 'build', 'dist'}

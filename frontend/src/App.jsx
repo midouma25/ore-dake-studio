@@ -1,5 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// Auth Components & Store
+import useAuthStore from './store/authStore';
+import LoginForm from './components/LoginForm';
 
 // Layout Components
 import { Sidebar } from './components/layout/Sidebar';
@@ -10,7 +14,7 @@ import { EffectWindow } from './components/audio-realm/effects-rack/EffectWindow
 import { Dashboard } from './components/dashboard/Dashboard';
 import { SharedLibrary } from './components/shared-library/SharedLibrary';
 
-// المحطة الفضائية الصوتية التي تجمع كل شيء (AI Rack + Timeline + Effects Rack)
+// المحطة الفضائية الصوتية
 import { AudioWorkspace } from './components/audio-realm/AudioWorkspace';
 
 // Video Realm Components
@@ -18,6 +22,15 @@ import { EmotionVideoGenerator } from './components/video-realm/emotion-gen/Emot
 import { LipSyncPanel } from './components/video-realm/lip-sync/LipSyncPanel';
 
 function App() {
+  // جلب حالة تسجيل الدخول من الـ Store
+  const { token } = useAuthStore();
+
+  // 🔴 حارس البوابة: إذا لم يكن هناك توكن، اعرض صفحة الدخول فوراً
+  if (!token) {
+    return <LoginForm />;
+  }
+
+  // 🟢 إذا كان هناك توكن، اعرض تطبيقك بالكامل كما كان بالضبط
   return (
     <Router>
       <div className="w-screen h-screen bg-bgPrimary flex flex-col overflow-hidden text-textPrimary font-sans">
@@ -35,7 +48,7 @@ function App() {
               {/* Home / Dashboard */}
               <Route path="/" element={<Dashboard />} />
 
-              {/* Audio Realm - نمرر المحطة الصوتية الشاملة مباشرة هنا */}
+              {/* Audio Realm */}
               <Route path="/audio" element={<AudioWorkspace />} />
 
               {/* Video Realm */}
@@ -55,6 +68,8 @@ function App() {
                 </div>
               } />
 
+              {/* حماية للمسارات العشوائية */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </div>

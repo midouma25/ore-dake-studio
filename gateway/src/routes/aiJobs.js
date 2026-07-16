@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { aiQueue } = require('../config/queue');
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // POST /api/ai/jobs - Submit a new AI task
 router.post('/jobs', async (req, res) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import WaveSurfer from 'wavesurfer.js';
-import { Play, Pause, SkipBack, Volume2 } from 'lucide-react'; // أضفنا أيقونة الصوت
+import { Play, Pause, SkipBack, Volume2 } from 'lucide-react';
 
 export const AudioRealm = ({ tracks = [], originalTrackUrl }) => {
   const containerRefs = useRef([]);
@@ -24,7 +24,6 @@ export const AudioRealm = ({ tracks = [], originalTrackUrl }) => {
     const initialStates = {};
     displayTracks.forEach((_, idx) => {
       const autoMuteMaster = displayTracks.length > 1 && idx === 0;
-      // أضفنا volume: 1 كقيمة افتراضية
       initialStates[idx] = { mute: autoMuteMaster, solo: false, volume: 1 };
     });
     setTrackStates(initialStates);
@@ -48,7 +47,17 @@ export const AudioRealm = ({ tracks = [], originalTrackUrl }) => {
       ws.setVolume(autoMuteMaster ? 0 : 1);
 
       const audioUrl = typeof track === 'object' ? track.src : track;
-      ws.load(audioUrl);
+      
+      // 🌟 الإصلاح السحري لمشكلة AbortError 🌟
+      const loadPromise = ws.load(audioUrl);
+      if (loadPromise && typeof loadPromise.catch === 'function') {
+        loadPromise.catch(err => {
+          if (err.name !== 'AbortError') {
+            console.error('WaveSurfer Load Error:', err);
+          }
+        });
+      }
+
       wavesurfersRef.current[idx] = ws;
 
       ws.on('interaction', () => {
@@ -103,7 +112,6 @@ export const AudioRealm = ({ tracks = [], originalTrackUrl }) => {
     applyAudioStates(newStates);
   };
 
-  // 🌟 دالة التحكم بالصوت الجديدة 🌟
   const handleVolumeChange = (idx, newVolume) => {
     const newStates = { ...trackStates };
     newStates[idx].volume = newVolume;
@@ -169,7 +177,6 @@ export const AudioRealm = ({ tracks = [], originalTrackUrl }) => {
               >S</button>
             </div>
 
-            {/* 🌟 بكرة التحكم في مستوى الصوت 🌟 */}
             <div className="flex items-center gap-2 mt-1 z-10 bg-bgPrimary/50 p-1.5 rounded border border-borderColor">
               <Volume2 className="w-3 h-3 text-textSecondary" />
               <input 

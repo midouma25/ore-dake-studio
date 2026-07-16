@@ -107,30 +107,35 @@ class ProfessionalEffectsRack:
         sf.write(output_path, effected_audio.T, sample_rate)
         print(f"✨ اكتمل التصدير بجودة VST المطلقة: {output_path}\n" + "="*50)
 
-# ==========================================
-# 🧪 تجربة "رف المؤثرات" محلياً
-# ==========================================
-if __name__ == "__main__":
-    react_payload = {
-        "effects_chain": [
-            {"type": "NoiseGate", "threshold_db": -45, "ratio": 4, "attack_ms": 1, "release_ms": 100},
-            {"type": "HighpassFilter", "cutoff_hz": 80},
-            {"type": "ParametricEQ_Band", "cutoff_hz": 250, "gain_db": -3.0, "q": 1.2},
-            {"type": "ParametricEQ_Band", "cutoff_hz": 3500, "gain_db": -4.0, "q": 2.0},
-            {"type": "AirEQ", "cutoff_hz": 6000, "gain_db": 3.0},
-            {"type": "Compressor", "threshold_db": -18, "ratio": 3, "attack_ms": 5, "release_ms": 50},
-            {"type": "Limiter", "threshold_db": -1.0}
-        ]
-    }
 
-    # ⚠️ ضع ملفاً صوتياً للتجربة داخل مجلد ai-engine باسم "test_input.wav" أو غير المسار هنا
-    current_dir = os.path.dirname(os.path.abspath(r"C:\Users\seifg\Downloads\download"))
-    input_file = os.path.join(current_dir, "anime_high_goku_actor_screaming.mp3")
-    output_file = os.path.join(current_dir, "test_output_processed.wav")
+if __name__ == "__main__":
+    import sys
+    import json
+
+    # يتوقع السكربت 3 مدخلات من Node.js: مسار الإدخال، مسار الإخراج، ومصفوفة الفلاتر (JSON)
+    if len(sys.argv) < 4:
+        print("❌ خطأ: يجب تمرير <input_file> <output_file> <json_config>")
+        sys.exit(1)
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    
+    try:
+        # تحويل النص القادم من Node إلى مصفوفة بايثون
+        effects_config = json.loads(sys.argv[3])
+    except Exception as e:
+        print(f"❌ خطأ في قراءة إعدادات الفلاتر (JSON): {e}")
+        sys.exit(1)
 
     if os.path.exists(input_file):
-        rack = ProfessionalEffectsRack()
-        rack.build_chain(react_payload["effects_chain"])
-        rack.process(input_file, output_file)
+        try:
+            rack = ProfessionalEffectsRack()
+            rack.build_chain(effects_config)
+            rack.process(input_file, output_file)
+            print("DONE_SUCCESS") # رسالة نجاح ليلتقطها خادم Node.js
+        except Exception as e:
+            print(f"❌ حدث خطأ أثناء المعالجة: {e}")
+            sys.exit(1)
     else:
-        print(f"⚠️ يرجى وضع ملف صوتي باسم 'test_input.wav' داخل مجلد: {current_dir}")
+        print(f"❌ الملف الصوتي الأصلي غير موجود: {input_file}")
+        sys.exit(1)

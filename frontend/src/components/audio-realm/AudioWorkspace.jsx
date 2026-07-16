@@ -19,7 +19,6 @@ export const AudioWorkspace = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
   
-  // 🌟 إضافة لمعرفة الأداة النشطة حالياً (التنظيف أم الفصل)
   const [activeJobType, setActiveJobType] = useState(null);
 
   useEffect(() => {
@@ -73,7 +72,6 @@ export const AudioWorkspace = () => {
     }
   };
 
-  // 🌟 الدالة الجديدة للتنظيف العميق
   const handleDeepClean = async () => {
     if (!serverFilePath) return alert("الملف الأصلي غير متوفر على الخادم.");
     setIsProcessing(true);
@@ -95,7 +93,6 @@ export const AudioWorkspace = () => {
     }
   };
 
-  // دالة ذكية لتحميل الملفات
   const handleDownload = (url, name) => {
     if (!url) return alert("الملف غير جاهز بعد!");
     const link = document.createElement('a');
@@ -109,14 +106,11 @@ export const AudioWorkspace = () => {
   if (!originalTrackUrl) return <Navigate to="/" replace />;
 
   return (
-    // الحاوية الأم أصبحت عمودية (flex-col) لتستوعب الشريط العلوي أولاً
     <div className="flex flex-col w-full h-full overflow-hidden bg-bgPrimary text-textPrimary select-none">
       
-      {/* 🌟 شريط القوائم العلوي (DAW Menu Bar) 🌟 */}
       <div className="h-10 bg-[#0a0a0a] border-b border-borderColor flex items-center px-4 text-sm z-50">
         <div className="flex items-center gap-1 font-medium">
           
-          {/* قائمة File */}
           <div className="relative group">
             <button className="px-3 py-1.5 hover:bg-bgTertiary rounded text-textSecondary hover:text-white transition-colors">File</button>
             <div className="absolute left-0 top-full mt-0 w-56 bg-bgSecondary border border-borderColor rounded-md shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all py-1">
@@ -128,7 +122,6 @@ export const AudioWorkspace = () => {
                 <FileAudio className="w-4 h-4" /> Download Original
               </button>
               
-              {/* تفعيل زر تحميل النتيجة فقط إذا كان هناك مسارات مفصولة */}
               <button 
                 onClick={() => separatedTracks.forEach(t => handleDownload(t.src, t.name))}
                 disabled={separatedTracks.length === 0}
@@ -144,7 +137,6 @@ export const AudioWorkspace = () => {
             </div>
           </div>
 
-          {/* قائمة Edit */}
           <div className="relative group">
             <button className="px-3 py-1.5 hover:bg-bgTertiary rounded text-textSecondary hover:text-white transition-colors">Edit</button>
             <div className="absolute left-0 top-full mt-0 w-48 bg-bgSecondary border border-borderColor rounded-md shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all py-1">
@@ -157,19 +149,16 @@ export const AudioWorkspace = () => {
             </div>
           </div>
 
-          {/* قائمة View */}
           <div className="relative group">
             <button className="px-3 py-1.5 hover:bg-bgTertiary rounded text-textSecondary hover:text-white transition-colors">View</button>
           </div>
 
-          {/* قائمة Help */}
           <div className="relative group">
             <button className="px-3 py-1.5 hover:bg-bgTertiary rounded text-textSecondary hover:text-white transition-colors">Help</button>
           </div>
 
         </div>
 
-        {/* معلومات المشروع في الجهة اليمنى */}
         <div className="ml-auto flex items-center gap-4 text-xs text-textSecondary">
           <span className="flex items-center gap-2">
             <Settings className="w-3.5 h-3.5" /> 48000 Hz / 32-bit float
@@ -182,19 +171,16 @@ export const AudioWorkspace = () => {
         </div>
       </div>
 
-      {/* 🌟 منطقة العمل (اللوحات الثلاث) 🌟 */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* 1. الجناح الأيسر: لوحة الذكاء الاصطناعي */}
         <AIAudioRack 
           onStemSeparation={handleStemSeparation}
-          onDeepClean={handleDeepClean} // تمرير الدالة الجديدة
-          activeJobType={activeJobType} // تمرير نوع المهمة
+          onDeepClean={handleDeepClean} 
+          activeJobType={activeJobType} 
           isProcessing={isProcessing}
           progressMessage={progressMessage}
         />
 
-        {/* 2. قلب المحطة: المخطط الزمني */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
           <div className="h-12 border-b border-borderColor bg-bgSecondary flex items-center justify-between px-4 z-10 shadow-sm">
             <div className="flex items-center gap-4">
@@ -214,7 +200,6 @@ export const AudioWorkspace = () => {
           </div>
         </div>
 
-        {/* 3. الجناح الأيمن: رف المؤثرات */}
         <EffectsRack />
 
       </div>
