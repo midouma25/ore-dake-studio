@@ -72,6 +72,20 @@ export const AudioWorkspace = () => {
     }
   };
 
+
+// 🌟 دالة استقبال الملف المعالج من الرف 🌟
+  const handleEffectApplied = (processedUrl) => {
+    const newTrack = {
+      name: `FX Rack Output (${fileName})`,
+      src: processedUrl,
+      type: 'processed' // لإعطائه لوناً مختلفاً في WaveSurfer
+    };
+    
+    // إضافة المسار الجديد إلى قائمة المسارات الموجودة في الـ Timeline
+    setSeparatedTracks(prevTracks => [...prevTracks, newTrack]);
+  };
+
+
   const handleDeepClean = async () => {
     if (!serverFilePath) return alert("الملف الأصلي غير متوفر على الخادم.");
     setIsProcessing(true);
@@ -200,7 +214,12 @@ export const AudioWorkspace = () => {
           </div>
         </div>
 
-        <EffectsRack />
+{/* 3. الجناح الأيمن: رف المؤثرات */}
+        <EffectsRack 
+          serverFilePath={serverFilePath} 
+          fileName={fileName}
+          onProcessComplete={handleEffectApplied} // 🌟 تمرير الدالة للرف
+        />
 
       </div>
     </div>

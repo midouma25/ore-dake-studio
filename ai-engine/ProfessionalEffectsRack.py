@@ -1,4 +1,8 @@
 import os
+import sys
+# 🌟 هذا السطر السحري يجبر ويندوز على قبول الإيموجي واللغة العربية دون أعطال 🌟
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 import soundfile as sf
 from pedalboard import (
     Pedalboard, NoiseGate, Compressor, Limiter, 
