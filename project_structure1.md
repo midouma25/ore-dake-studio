@@ -135,6 +135,18 @@
                 ├── websocket.js
             ├── workers/
                 ├── aiWorker.js
+        ├── uploads/
+            ├── file-1784201495898-336733422.mp3
+            ├── file-1784205007187-639840658.mp3
+            ├── file-1784205223281-812127140.mp3
+            ├── file-1784206034342-322066217.mp3
+            ├── file-1784206178714-197221219.mp3
+            ├── file-1784206454180-894080422.mp3
+            ├── file-1784206959200-250800835.mp3
+            ├── file-1784372143462-766377419.wav
+            ├── processed_1784206970274.wav
+            ├── processed_1784372469230.wav
+            ├── processed_1784372583126.wav
     ├── uploads/
         ├── audio-1783648716551-511077011.mp3
         ├── audio-1783683113938-242827333.mp3
@@ -11491,6 +11503,18 @@ module.exports = { initWorker };
                 ├── websocket.js
             ├── workers/
                 ├── aiWorker.js
+        ├── uploads/
+            ├── file-1784201495898-336733422.mp3
+            ├── file-1784205007187-639840658.mp3
+            ├── file-1784205223281-812127140.mp3
+            ├── file-1784206034342-322066217.mp3
+            ├── file-1784206178714-197221219.mp3
+            ├── file-1784206454180-894080422.mp3
+            ├── file-1784206959200-250800835.mp3
+            ├── file-1784372143462-766377419.wav
+            ├── processed_1784206970274.wav
+            ├── processed_1784372469230.wav
+            ├── processed_1784372583126.wav
     ├── uploads/
         ├── audio-1783648716551-511077011.mp3
         ├── audio-1783683113938-242827333.mp3
@@ -23187,6 +23211,10 @@ model_loader = ModelLoader()
 
 ```python
 import os
+import sys
+# 🌟 هذا السطر السحري يجبر ويندوز على قبول الإيموجي واللغة العربية دون أعطال 🌟
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 import soundfile as sf
 from pedalboard import (
     Pedalboard, NoiseGate, Compressor, Limiter, 
@@ -23282,46 +23310,85 @@ class ProfessionalEffectsRack:
             print(f"   {i+1}. {p.__class__.__name__}")
         
     def process(self, input_path, output_path):
-        print(f"\n🚀 جاري معالجة الملف: {os.path.basename(input_path)}")
-        audio, sample_rate = sf.read(input_path)
+        import subprocess # نضعه هنا لضمان توفره
         
+        print(f"\n🚀 جاري معالجة الملف: {os.path.basename(input_path)}")
+        
+        # 🌟 خطوة الحماية العبقرية: تحويل أي ملف إلى WAV نقي ومفهوم برمجياً 🌟
+        safe_wav = input_path + "_safe.wav"
+        try:
+            import imageio_ffmpeg
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except ImportError:
+            ffmpeg_exe = "ffmpeg" # الاعتماد على النظام في حال عدم وجود المكتبة
+
+        print("🔄 جاري تهيئة الملف ليكون بصيغة ستوديو قياسية...")
+        try:
+            # نجبر الملف أن يتحول إلى PCM WAV بتردد 44100Hz
+            subprocess.run([
+                ffmpeg_exe, "-y", "-i", input_path,
+                "-ar", "44100", "-c:a", "pcm_s16le", safe_wav
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # الآن نقرأ الملف النظيف والمضمون 100%
+            audio, sample_rate = sf.read(safe_wav)
+        except Exception as e:
+            print(f"⚠️ لم نتمكن من تهيئة الملف، سنحاول قراءته مباشرة... {e}")
+            audio, sample_rate = sf.read(input_path)
+        
+        # تجهيز الصوت لمكتبة Pedalboard
         if len(audio.shape) == 1:
             audio = audio.reshape(1, -1)
         else:
             audio = audio.T
             
+        print("🎛️ جاري تطبيق الفلاتر الصوتية...")
         effected_audio = self.board(audio, sample_rate)
         
+        # حفظ النتيجة
         sf.write(output_path, effected_audio.T, sample_rate)
-        print(f"✨ اكتمل التصدير بجودة VST المطلقة: {output_path}\n" + "="*50)
+        
+        # حذف الملف المؤقت للتنظيف
+        if os.path.exists(safe_wav):
+            try:
+                os.remove(safe_wav)
+            except:
+                pass
+                
+        print(f"✨ اكتمل التصدير بنجاح: {output_path}\n" + "="*50)
 
-# ==========================================
-# 🧪 تجربة "رف المؤثرات" محلياً
-# ==========================================
+
 if __name__ == "__main__":
-    react_payload = {
-        "effects_chain": [
-            {"type": "NoiseGate", "threshold_db": -45, "ratio": 4, "attack_ms": 1, "release_ms": 100},
-            {"type": "HighpassFilter", "cutoff_hz": 80},
-            {"type": "ParametricEQ_Band", "cutoff_hz": 250, "gain_db": -3.0, "q": 1.2},
-            {"type": "ParametricEQ_Band", "cutoff_hz": 3500, "gain_db": -4.0, "q": 2.0},
-            {"type": "AirEQ", "cutoff_hz": 6000, "gain_db": 3.0},
-            {"type": "Compressor", "threshold_db": -18, "ratio": 3, "attack_ms": 5, "release_ms": 50},
-            {"type": "Limiter", "threshold_db": -1.0}
-        ]
-    }
+    import sys
+    import json
 
-    # ⚠️ ضع ملفاً صوتياً للتجربة داخل مجلد ai-engine باسم "test_input.wav" أو غير المسار هنا
-    current_dir = os.path.dirname(os.path.abspath(r"C:\Users\seifg\Downloads\download"))
-    input_file = os.path.join(current_dir, "anime_high_goku_actor_screaming.mp3")
-    output_file = os.path.join(current_dir, "test_output_processed.wav")
+    # يتوقع السكربت 3 مدخلات من Node.js: مسار الإدخال، مسار الإخراج، ومصفوفة الفلاتر (JSON)
+    if len(sys.argv) < 4:
+        print("❌ خطأ: يجب تمرير <input_file> <output_file> <json_config>")
+        sys.exit(1)
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    
+    try:
+        # تحويل النص القادم من Node إلى مصفوفة بايثون
+        effects_config = json.loads(sys.argv[3])
+    except Exception as e:
+        print(f"❌ خطأ في قراءة إعدادات الفلاتر (JSON): {e}")
+        sys.exit(1)
 
     if os.path.exists(input_file):
-        rack = ProfessionalEffectsRack()
-        rack.build_chain(react_payload["effects_chain"])
-        rack.process(input_file, output_file)
+        try:
+            rack = ProfessionalEffectsRack()
+            rack.build_chain(effects_config)
+            rack.process(input_file, output_file)
+            print("DONE_SUCCESS") # رسالة نجاح ليلتقطها خادم Node.js
+        except Exception as e:
+            print(f"❌ حدث خطأ أثناء المعالجة: {e}")
+            sys.exit(1)
     else:
-        print(f"⚠️ يرجى وضع ملف صوتي باسم 'test_input.wav' داخل مجلد: {current_dir}")
+        print(f"❌ الملف الصوتي الأصلي غير موجود: {input_file}")
+        sys.exit(1)
 ```
 
 ---
@@ -27354,6 +27421,20 @@ export const AudioWorkspace = () => {
     }
   };
 
+
+// 🌟 دالة استقبال الملف المعالج من الرف 🌟
+  const handleEffectApplied = (processedUrl) => {
+    const newTrack = {
+      name: `FX Rack Output (${fileName})`,
+      src: processedUrl,
+      type: 'processed' // لإعطائه لوناً مختلفاً في WaveSurfer
+    };
+    
+    // إضافة المسار الجديد إلى قائمة المسارات الموجودة في الـ Timeline
+    setSeparatedTracks(prevTracks => [...prevTracks, newTrack]);
+  };
+
+
   const handleDeepClean = async () => {
     if (!serverFilePath) return alert("الملف الأصلي غير متوفر على الخادم.");
     setIsProcessing(true);
@@ -27482,7 +27563,12 @@ export const AudioWorkspace = () => {
           </div>
         </div>
 
-        <EffectsRack />
+{/* 3. الجناح الأيمن: رف المؤثرات */}
+        <EffectsRack 
+          serverFilePath={serverFilePath} 
+          fileName={fileName}
+          onProcessComplete={handleEffectApplied} // 🌟 تمرير الدالة للرف
+        />
 
       </div>
     </div>
@@ -27813,83 +27899,274 @@ export const EffectSlot = ({ effect, trackId }) => {
 ## الملف: `frontend\src\components\audio-realm\effects-rack\EffectsRack.jsx`
 
 ```javascript
-import React from 'react';
-import { Sliders, Plus } from 'lucide-react';
-import { Panel } from '../../common/Panel';
-// تأكد من وجود EffectSlot في مشروعك أو قم بإنشائه
-import { EffectSlot } from './EffectSlot'; 
-import { useEffectsStore } from '../../../store/useEffectsStore';
+import React, { useState, useRef, useEffect } from 'react';
+import { Sliders, Activity, Radio, Waves, Cpu, Power, Plus, Trash2, Settings2, ChevronDown } from 'lucide-react';
+import api from '../../../services/api'; 
 
-const EFFECT_CATEGORIES = [
-  { id: 'amplitude_compression', name: '1. Amplitude and Compression' },
-  { id: 'delay_echo', name: '2. Delay and Echo' },
-  { id: 'diagnostics', name: '3. Diagnostics' },
-  { id: 'filter_eq', name: '4. Filter and EQ' },
-  { id: 'modulation', name: '5. Modulation' },
-  { id: 'noise_reduction', name: '6. Noise Reduction / Restoration' },
-  { id: 'reverb', name: '7. Reverb' },
-  { id: 'special', name: '8. Special' },
-  { id: 'stereo_imagery', name: '9. Stereo Imagery' },
-  { id: 'time_pitch', name: '10. Time and Pitch' },
-  { id: 'vst', name: '11. VST / Audio Plug-In Manager' },
-];
+// 🌟 1. القائمة الشاملة المطابقة لمحرك Python 🌟
+const EFFECT_CATEGORIES = {
+  dynamics: { 
+    title: 'Dynamics (الديناميكية)', icon: Activity, color: 'text-blue-400', 
+    effects: [
+      { name: 'Compressor', type: 'Compressor' },
+      { name: 'Limiter', type: 'Limiter' },
+      { name: 'Noise Gate', type: 'NoiseGate' },
+      { name: 'Gain / Volume', type: 'Gain' }
+    ] 
+  },
+  eq: { 
+    title: 'EQ & Filters (الترددات)', icon: Sliders, color: 'text-green-400', 
+    effects: [
+      { name: 'Parametric EQ', type: 'ParametricEQ_Band' },
+      { name: 'Air EQ (High Shelf)', type: 'AirEQ' },
+      { name: 'Highpass Filter', type: 'HighpassFilter' },
+      { name: 'Lowpass Filter', type: 'LowpassFilter' }
+    ] 
+  },
+  spatial: { 
+    title: 'Spatial & Delay (الفراغ)', icon: Waves, color: 'text-purple-400', 
+    effects: [
+      { name: 'Studio Reverb', type: 'Reverb' },
+      { name: 'Delay / Echo', type: 'Delay' }
+    ] 
+  },
+  modulation: { 
+    title: 'Modulation & Pitch', icon: Radio, color: 'text-pink-400', 
+    effects: [
+      { name: 'Chorus', type: 'Chorus' },
+      { name: 'Distortion', type: 'Distortion' },
+      { name: 'Pitch Shift (الصوت)', type: 'PitchShift' }
+    ] 
+  }
+};
 
-export const EffectsRack = () => {
-  const { activeTrackId, trackEffects } = useEffectsStore();
-  
-  const activeEffects = trackEffects[activeTrackId] || [];
+// 🌟 2. القيم الافتراضية لكل فلتر عند إضافته للرف 🌟
+const EFFECT_DEFAULTS = {
+  'Compressor': { threshold_db: -12, ratio: 4, attack_ms: 5, release_ms: 50 },
+  'Limiter': { threshold_db: -1.0 },
+  'NoiseGate': { threshold_db: -40, ratio: 4, attack_ms: 1, release_ms: 100 },
+  'Gain': { gain_db: 0 },
+  'HighpassFilter': { cutoff_hz: 80 },
+  'LowpassFilter': { cutoff_hz: 16000 },
+  'ParametricEQ_Band': { cutoff_hz: 1000, gain_db: 0, q: 1.0 },
+  'AirEQ': { cutoff_hz: 6000, gain_db: 2.0 },
+  'Reverb': { room_size: 0.5, damping: 0.5, wet_level: 0.33, dry_level: 0.4, width: 1.0 },
+  'Delay': { delay_ms: 500, feedback: 0.3, mix: 0.5 },
+  'Chorus': { rate_hz: 1.0, depth: 0.25, mix: 0.5 },
+  'Distortion': { drive_db: 10.0 },
+  'PitchShift': { semitones: 0 }
+};
+
+// تحديد نطاق كل مفتاح بذكاء
+const getSliderProps = (key) => {
+  if (key.includes('db')) return { min: -40, max: 24, step: 0.5 };
+  if (key.includes('hz')) return { min: 20, max: 20000, step: 10 };
+  if (key.includes('ms')) return { min: 1, max: 2000, step: 1 };
+  if (key.includes('ratio')) return { min: 1, max: 20, step: 0.5 };
+  if (key === 'q') return { min: 0.1, max: 10, step: 0.1 };
+  if (key === 'semitones') return { min: -12, max: 12, step: 1 }; // لتغيير طبقة الصوت
+  return { min: 0, max: 1, step: 0.01 }; // للنسب مثل mix, damping, room_size
+};
+
+// 🌟 أضفنا onProcessComplete هنا
+export const EffectsRack = ({ serverFilePath, fileName, onProcessComplete }) => {
+  const [activeEffects, setActiveEffects] = useState([
+    { 
+      id: Date.now(), name: 'Parametric EQ', type: 'ParametricEQ_Band', category: 'eq', enabled: true, 
+      params: { ...EFFECT_DEFAULTS['ParametricEQ_Band'] } 
+    }
+  ]);
+
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  // إغلاق القائمة عند النقر خارجها
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowAddMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleEffect = (id) => {
+    setActiveEffects(activeEffects.map(eff => 
+      eff.id === id ? { ...eff, enabled: !eff.enabled } : eff
+    ));
+  };
+
+  const removeEffect = (id) => {
+    setActiveEffects(activeEffects.filter(eff => eff.id !== id));
+  };
+
+  const handleParamChange = (id, key, newValue) => {
+    setActiveEffects(activeEffects.map(eff => 
+      eff.id === id ? { ...eff, params: { ...eff.params, [key]: parseFloat(newValue) } } : eff
+    ));
+  };
+
+  // 🌟 دالة إضافة فلتر جديد للرف 🌟
+  const addEffectToRack = (effectName, effectType, categoryKey) => {
+    const newEffect = {
+      id: Date.now() + Math.random(),
+      name: effectName,
+      type: effectType,
+      category: categoryKey,
+      enabled: true,
+      params: { ...EFFECT_DEFAULTS[effectType] }
+    };
+    setActiveEffects([...activeEffects, newEffect]);
+    setShowAddMenu(false);
+  };
+
+  const handleApplyEffects = async () => {
+    if (!serverFilePath) return alert('لا يوجد ملف صوتي نشط! يرجى رفع ملف أولاً.');
+
+    const formattedChain = activeEffects
+      .filter(eff => eff.enabled)
+      .map(eff => ({ type: eff.type, ...eff.params }));
+
+    if (formattedChain.length === 0) return alert('لا يوجد أي فلتر مفعل في الرف.');
+
+    setIsProcessing(true);
+    try {
+      const response = await api.post('/ai/apply-rack', {
+        inputFilePath: serverFilePath,
+        effectsChain: formattedChain
+      });
+      
+      // 🌟 السحر هنا: نرسل رابط الملف الجديد المعالج إلى المحطة الأم
+      if (onProcessComplete && response.data.processedFileUrl) {
+        onProcessComplete(response.data.processedFileUrl);
+      }
+      
+    } catch (error) {
+      console.error('Effects Rack Error:', error);
+      alert(error.response?.data?.message || 'حدث خطأ أثناء الاتصال بمحرك الصوت.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
-    // اللوحة على اليمين (border-l)
-    <div className="flex flex-col h-full bg-bgPrimary border-l border-borderColor w-80 shadow-lg z-10">
+    <div className="w-[340px] bg-bgSecondary border-l border-borderColor flex flex-col h-full overflow-hidden shadow-2xl z-20">
       
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-borderColor bg-bgSecondary">
-        <div className="flex items-center gap-2 text-textPrimary font-semibold">
-          <Sliders className="w-5 h-5 text-accentPrimary" />
-          <h2 className="bg-clip-text text-transparent bg-gradient-to-r from-accentPrimary to-emerald-400">
-            Effects Rack
-          </h2>
+      {/* رأس اللوحة */}
+      <div className="h-12 border-b border-borderColor flex items-center justify-between px-4 bg-[#0a0a0a]">
+        <div className="flex items-center gap-2">
+          <Settings2 className="w-4 h-4 text-accentPrimary" />
+          <h3 className="font-bold text-sm tracking-wide text-textPrimary uppercase">Effects Rack</h3>
         </div>
-        <div className="text-[10px] text-textSecondary font-mono bg-bgTertiary px-2 py-1 rounded border border-borderColor">
-          {activeTrackId ? activeTrackId.replace('_', ' ').toUpperCase() : 'MASTER'}
+        <span className="text-xs font-mono text-textSecondary bg-bgTertiary px-2 py-0.5 rounded border border-borderColor">
+          {activeEffects.length} Slots
+        </span>
+      </div>
+
+      {/* الرفوف */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3 relative">
+        {activeEffects.map((eff) => {
+          const categoryMeta = EFFECT_CATEGORIES[eff.category];
+          const Icon = categoryMeta?.icon || Settings2;
+
+          return (
+            <div key={eff.id} className={`bg-bgPrimary border rounded-lg overflow-hidden transition-all ${eff.enabled ? 'border-borderColor shadow-lg' : 'border-transparent opacity-60'}`}>
+              <div className="flex items-center justify-between p-2.5 bg-bgTertiary border-b border-borderColor">
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => toggleEffect(eff.id)}
+                    className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${eff.enabled ? 'bg-accentPrimary text-bgPrimary shadow-[0_0_10px_rgba(0,212,255,0.4)]' : 'bg-bgSecondary text-textSecondary'}`}
+                  >
+                    <Power className="w-3.5 h-3.5" />
+                  </button>
+                  <Icon className={`w-4 h-4 ${categoryMeta?.color}`} />
+                  <span className="text-sm font-bold truncate max-w-[140px]">{eff.name}</span>
+                </div>
+                
+                <button onClick={() => removeEffect(eff.id)} className="text-textSecondary hover:text-red-400 transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-3 bg-[#0d0d0d] space-y-3">
+                {Object.entries(eff.params || {}).map(([key, val]) => {
+                  const sliderProps = getSliderProps(key);
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <span className="text-[10px] text-textSecondary w-16 truncate uppercase" title={key}>
+                        {key.replace('_', ' ')}
+                      </span>
+                      <input 
+                        type="range" 
+                        {...sliderProps}
+                        value={val}
+                        onChange={(e) => handleParamChange(eff.id, key, e.target.value)}
+                        disabled={!eff.enabled}
+                        className="flex-1 h-1 bg-bgSecondary appearance-none rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-accentPrimary cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <span className="text-[10px] font-mono text-accentSecondary w-8 text-right bg-bgSecondary px-1 py-0.5 rounded">
+                        {val}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* 🌟 زر الإضافة والقائمة المنسدلة 🌟 */}
+        <div className="relative mt-4" ref={menuRef}>
+          <button 
+            onClick={() => setShowAddMenu(!showAddMenu)}
+            className="w-full py-3 border border-dashed border-textSecondary/40 text-textSecondary rounded-lg hover:border-accentPrimary hover:text-accentPrimary transition-colors flex items-center justify-center gap-2 text-sm font-medium bg-bgTertiary/30"
+          >
+            <Plus className="w-4 h-4" /> Add Effect
+            <ChevronDown className={`w-4 h-4 transition-transform ${showAddMenu ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* القائمة المنسدلة (Dropdown Menu) */}
+          {showAddMenu && (
+            <div className="absolute bottom-full left-0 w-full mb-2 bg-[#0a0a0a] border border-borderColor rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2">
+              <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                {Object.entries(EFFECT_CATEGORIES).map(([catKey, category]) => (
+                  <div key={catKey}>
+                    <div className="px-3 py-1.5 bg-bgSecondary/50 text-[10px] font-bold text-textSecondary uppercase tracking-wider flex items-center gap-2">
+                      <category.icon className={`w-3 h-3 ${category.color}`} />
+                      {category.title}
+                    </div>
+                    {category.effects.map((effect, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => addEffectToRack(effect.name, effect.type, catKey)}
+                        className="w-full text-left px-4 py-2 text-sm text-textPrimary hover:bg-accentPrimary hover:text-bgPrimary transition-colors flex items-center justify-between group"
+                      >
+                        {effect.name}
+                        <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Scrollable Categories Area */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-        {EFFECT_CATEGORIES.map((category) => {
-          const categoryEffects = activeEffects.filter(e => e.category === category.id);
-          
-          return (
-            <Panel 
-              key={category.id} 
-              title={category.name} 
-              defaultOpen={categoryEffects.length > 0} 
-              actionButton={
-                <button 
-                  className="p-1.5 hover:bg-bgPrimary rounded text-textSecondary hover:text-accentPrimary transition-all duration-200"
-                  title={`Add effect to ${category.name}`}
-                  onClick={(e) => { e.stopPropagation(); console.log('Open effect picker for', category.id); }}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              }
-            >
-              {categoryEffects.length > 0 ? (
-                <div className="flex flex-col gap-1">
-                  {categoryEffects.map(effect => (
-                    <EffectSlot key={effect.id} effect={effect} trackId={activeTrackId} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-textSecondary italic text-center py-3 opacity-50 bg-bgPrimary/30 rounded-lg">
-                  (Empty)
-                </div>
-              )}
-            </Panel>
-          );
-        })}
+      <div className="p-4 border-t border-borderColor bg-[#0a0a0a]">
+        <button 
+          onClick={handleApplyEffects}
+          disabled={isProcessing || activeEffects.length === 0}
+          className="w-full bg-gradient-to-r from-accentPrimary to-accentSecondary text-bgPrimary font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isProcessing ? (
+            <span className="animate-pulse">Rendering Audio...</span>
+          ) : (
+            <>Apply Rack to Track</>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -29041,17 +29318,13 @@ export const AudioRealm = ({ tracks = [], originalTrackUrl }) => {
 
 ```javascript
 import { useState, useRef } from 'react';
-// تمت إضافة LogOut للأيقونات هنا
 import { Plus, Folder, Clock, MoreVertical, Search, Play, Video, Mic, Zap, LogOut } from 'lucide-react'; 
 import { Button } from '../common/Button';
 import { cn } from '../../utils/classNames';
-import api from '../../services/api';
+import api from '../../services/api'; // 🌟 التعديل الأهم: استخدام api ليرسل التوكن
 import { useNavigate } from 'react-router-dom';
-
-// استدعاء حالة المصادقة
 import useAuthStore from '../../store/authStore';
 
-// Mock Data for Projects
 const RECENT_PROJECTS = [
   { id: 1, name: 'Anime Dubbing - Episode 1', type: 'video', updatedAt: '2 hours ago', duration: '24:15', thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=400&q=80' },
   { id: 2, name: 'Podcast Episode 42: Tech News', type: 'audio', updatedAt: 'Yesterday', duration: '45:30', thumbnail: null },
@@ -29062,20 +29335,16 @@ const RECENT_PROJECTS = [
 export const Dashboard = () => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate(); 
-  
-  // 🌟 جلب بيانات المستخدم ودالة الخروج
   const { user, logout } = useAuthStore();
-  
   const [isUploading, setIsUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // دالة مساعدة لأخذ أول حرفين من اسم المستخدم للأيقونة الدائرية
   const getUserInitials = (name) => {
     if (!name) return 'OD';
     return name.substring(0, 2).toUpperCase();
   };
 
-const handleFileUpload = async (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -29086,23 +29355,15 @@ const handleFileUpload = async (e) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      // 🌟 التعديل هنا: استخدام api بدلاً من axios
-      // لا نحتاج لكتابة http://localhost:5000/api لأن api.js يضعها تلقائياً
-      // التوكن سيتم إرساله تلقائياً في الخلفية
+      // 🌟 نستخدم api.post هنا، وهو سيرسل التوكن السري تلقائياً
       const uploadResponse = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
       const serverFilePath = uploadResponse.data.filePath;
       console.log("تم الرفع والحفظ بقاعدة البيانات. المسار:", serverFilePath);
-      console.log("بيانات الملف (Asset):", uploadResponse.data.asset);
 
       const localUrl = URL.createObjectURL(file);
-      const assetId = uploadResponse.data.asset?._id || uploadResponse.data._id || null;
-
-      if (!assetId) {
-        console.warn('Asset ID not returned from upload response.', uploadResponse.data);
-      }
 
       setIsUploading(false);
       navigate('/audio', { 
@@ -29110,13 +29371,12 @@ const handleFileUpload = async (e) => {
           originalTrackUrl: localUrl, 
           serverFilePath: serverFilePath,
           fileName: file.name,
-          assetId
+          assetId: uploadResponse.data.assetId
         } 
       });
 
     } catch (error) {
       console.error("خطأ:", error);
-      // عرض رسالة خطأ أكثر دقة إذا انتهت صلاحية التوكن مثلاً
       alert(error.response?.data?.message || "حدث خطأ أثناء الرفع.");
       setIsUploading(false);
     }
@@ -29124,21 +29384,15 @@ const handleFileUpload = async (e) => {
 
   return (
     <div className="w-full h-full bg-bgPrimary flex flex-col overflow-hidden text-textPrimary">
-      
-      {/* Top Navigation / Stats */}
       <div className="h-16 border-b border-borderColor bg-bgSecondary flex items-center justify-between px-8">
         <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-accentPrimary to-accentSecondary">
           Ore Dake AI Studio
         </h1>
-        
         <div className="flex items-center gap-6">
-          {/* AI Credits Badge */}
           <div className="flex items-center gap-2 bg-bgTertiary border border-borderColor px-3 py-1.5 rounded-full">
             <Zap className="w-4 h-4 text-warning fill-warning" />
             <span className="text-sm font-medium">850 Credits</span>
           </div>
-          
-          {/* 🌟 Dynamic User Profile & Logout */}
           <div className="flex items-center gap-4 border-l border-borderColor pl-6">
             <div className="flex items-center gap-3">
               <span className="text-sm text-textSecondary hidden md:block">
@@ -29148,12 +29402,7 @@ const handleFileUpload = async (e) => {
                 {getUserInitials(user?.username)}
               </div>
             </div>
-            
-            <button 
-              onClick={logout}
-              className="p-1.5 text-textSecondary hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors"
-              title="تسجيل الخروج"
-            >
+            <button onClick={logout} className="p-1.5 text-textSecondary hover:text-red-400 hover:bg-red-400/10 rounded-md transition-colors" title="تسجيل الخروج">
               <LogOut className="w-5 h-5" />
             </button>
           </div>
@@ -29162,55 +29411,29 @@ const handleFileUpload = async (e) => {
 
       <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
         <div className="max-w-6xl mx-auto space-y-8">
-          
-          {/* Welcome & Actions */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              {/* 🌟 Dynamic Welcome Message */}
               <h2 className="text-3xl font-bold text-textPrimary mb-1">
                 Welcome back, {user?.username || 'Creator'}!
               </h2>
               <p className="text-textSecondary">What would you like to create today?</p>
             </div>
-            
             <div className="flex items-center gap-3">
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileUpload} 
-                accept="audio/*" 
-                className="hidden" 
-              />
-
-              <Button 
-                variant="secondary" 
-                icon={Mic} 
-                className="hover:text-accentPrimary hover:border-accentPrimary"
-                onClick={() => fileInputRef.current.click()}
-                disabled={isUploading}
-              >
+              <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="audio/*" className="hidden" />
+              <Button variant="secondary" icon={Mic} className="hover:text-accentPrimary hover:border-accentPrimary" onClick={() => fileInputRef.current.click()} disabled={isUploading}>
                 {isUploading ? 'Uploading...' : 'Upload Audio File'}
               </Button>
-              
               <Button variant="primary" icon={Video} className="bg-accentSecondary text-bgPrimary hover:bg-[#00bfff]">
                 New Video Project
               </Button>
             </div>
           </div>
 
-          {/* Search Bar */}
           <div className="relative max-w-md">
             <Search className="w-5 h-5 text-textSecondary absolute left-3 top-1/2 -translate-y-1/2" />
-            <input 
-              type="text" 
-              placeholder="Search your projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-bgSecondary border border-borderColor text-textPrimary pl-10 pr-4 py-2.5 rounded-md focus:border-accentPrimary outline-none transition-colors"
-            />
+            <input type="text" placeholder="Search your projects..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-bgSecondary border border-borderColor text-textPrimary pl-10 pr-4 py-2.5 rounded-md focus:border-accentPrimary outline-none transition-colors" />
           </div>
           
-          {/* Recent Projects Grid */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -29218,31 +29441,24 @@ const handleFileUpload = async (e) => {
               </h3>
               <Button variant="ghost" size="sm">View All</Button>
             </div>
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {RECENT_PROJECTS.map(project => (
                 <div key={project.id} className="bg-bgSecondary border border-borderColor rounded-lg overflow-hidden group hover:border-accentPrimary transition-all cursor-pointer">
-                  
-                  {/* Thumbnail */}
                   <div className="h-32 bg-bgTertiary relative flex items-center justify-center overflow-hidden">
                     {project.thumbnail ? (
                       <img src={project.thumbnail} alt={project.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                     ) : (
                       project.type === 'video' ? <Video className="w-10 h-10 text-textSecondary/50" /> : <Mic className="w-10 h-10 text-textSecondary/50" />
                     )}
-                    
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="w-12 h-12 rounded-full bg-accentPrimary text-bgPrimary flex items-center justify-center pl-1 shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
                         <Play className="w-6 h-6 fill-current" />
                       </div>
                     </div>
-                    
                     <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded font-mono">
                       {project.duration}
                     </div>
                   </div>
-                  
-                  {/* Info */}
                   <div className="p-4 relative">
                     <button className="absolute top-4 right-3 text-textSecondary hover:text-textPrimary">
                       <MoreVertical className="w-4 h-4" />
@@ -29259,7 +29475,6 @@ const handleFileUpload = async (e) => {
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -33105,17 +33320,24 @@ const express = require('express');
 const cors = require('cors');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const mongoose = require('mongoose'); 
 require('dotenv').config();
 const path = require('path');
 
-  // أضف هذا السطر مع استدعاءات الملفات في الأعلى
-// authRoutes moved to src/routes
+// 1. الاتصال بقاعدة البيانات
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/oredake_studio';
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ Connected to MongoDB successfully'))
+  .catch((err) => console.error('❌ Error connecting to MongoDB:', err));
+
+// 2. استدعاءات المسارات 
 const authRoutes = require('./src/routes/authRoutes');
-const outputsPath = path.resolve(__dirname, '../ai-engine/temp_workspace/demucs_out/mdx_extra/safe_input');
 const aiJobsRouter = require('./src/routes/aiJobs');
+const uploadRoutes = require('./src/routes/upload'); // تم التأكد من الاسم هنا
+
 const { initWebSocket } = require('./src/services/websocket');
 const { initWorker } = require('./src/workers/aiWorker');
-const uploadRouter = require('./src/routes/upload'); 
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -33125,11 +33347,11 @@ const io = new Server(httpServer, {
   }
 });
 
-// Middleware
+// 3. إعدادات الـ Middleware
 app.use(cors());
 app.use(express.json());
 
-// 🌟 مسار سري لاستقبال التقدم من بايثون وبثه للواجهة 🌟
+// 4. مسار سري لاستقبال التقدم من بايثون وبثه للواجهة
 app.post('/api/internal/progress', (req, res) => {
   const { message } = req.body;
   if (message) {
@@ -33138,16 +33360,17 @@ app.post('/api/internal/progress', (req, res) => {
   res.sendStatus(200);
 });
 
-// Routes
+// 5. ربط المسارات الأساسية (API Routes)
+app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiJobsRouter);
+app.use('/api/upload', uploadRoutes); 
 
-// توزيع الملفات المضغوطة للمتصفح
+// 6. الملفات الثابتة (Static Files)
+const outputsPath = path.resolve(__dirname, '../ai-engine/temp_workspace/demucs_out/mdx_extra/safe_input');
 app.use('/outputs', express.static(outputsPath));
-app.use('/api/upload', uploadRouter); 
-app.use('/uploads', express.static('../uploads'));
-console.log("Serving static files from:", outputsPath);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Init Services
+// 7. تشغيل الخدمات
 initWebSocket(io);
 initWorker(); // Start processing the queue
 
@@ -33155,21 +33378,6 @@ const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
   console.log(`Gateway running on port ${PORT}`);
 });
-
-const mongoose = require('mongoose');
-require('dotenv').config(); // للتأكد من قراءة ملف .env
-
-// رابط الاتصال بقاعدة البيانات (يفضل وضعه في ملف .env)
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/oredake_studio';
-
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ has connected to MongoDB successfully'))
-  .catch((err) => console.error('❌ Error connecting to MongoDB:', err));
-
-
-// أضف هذا السطر بعد تعريف app.use(express.json())
-app.use('/api/auth', authRoutes); 
-app.use('/api/upload', uploadRouter);
 ```
 
 ---
@@ -33453,15 +33661,20 @@ module.exports = mongoose.model('User', userSchema);
 ```javascript
 const express = require('express');
 const router = express.Router();
-const { aiQueue } = require('../config/queue');
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const authMiddleware = require('../middleware/authMiddleware');
+
+// 🌟 استدعاء طابور الذكاء الاصطناعي (تأكد من أن هذا المسار يطابق مشروعك) 🌟
+// إذا كان ملف الطابور في مكان آخر، قم بتعديل المسار، وإلا اتركه هكذا
+const { aiQueue } = require('../workers/aiWorker'); 
 
 // POST /api/ai/jobs - Submit a new AI task
 router.post('/jobs', async (req, res) => {
   try {
     const { type, title, parameters, inputFileId, priority = 'normal' } = req.body;
     
-    // In a real app, validate user credits and file ownership here
-
     const jobOptions = {};
     if (priority === 'high') jobOptions.priority = 1;
     if (priority === 'low') jobOptions.priority = 3;
@@ -33472,7 +33685,7 @@ router.post('/jobs', async (req, res) => {
       title,
       parameters,
       inputFileId,
-      userId: req.user?.id || 'anonymous', // Assuming auth middleware sets req.user
+      userId: req.user?.id || 'anonymous',
     }, jobOptions);
 
     res.status(202).json({
@@ -33513,6 +33726,55 @@ router.get('/jobs/:id', async (req, res) => {
   }
 });
 
+// =======================================================
+// 🌟 مسار تشغيل رف المؤثرات في بايثون (Effects Rack) 🌟
+// =======================================================
+router.post('/apply-rack', authMiddleware, (req, res) => {
+  const { inputFilePath, effectsChain } = req.body;
+
+  if (!inputFilePath || !effectsChain || effectsChain.length === 0) {
+    return res.status(400).json({ message: 'بيانات مفقودة أو الرف فارغ' });
+  }
+
+  // تحديد اسم ومسار الملف بعد المعالجة
+  const outputFileName = `processed_${Date.now()}.wav`;
+  const outputFilePath = path.join(process.cwd(), 'uploads', outputFileName);
+
+  // مسار ملف البايثون (تأكد أن ai-engine بجوار gateway)
+  const pythonScriptPath = path.resolve(__dirname, '../../../ai-engine/ProfessionalEffectsRack.py');
+  
+  // تحويل الفلاتر إلى نص لإرساله لبايثون
+  const jsonConfig = JSON.stringify(effectsChain);
+
+  console.log('🎧 جاري إرسال الفلاتر إلى محرك بايثون...');
+
+  // تشغيل سكريبت بايثون
+  const pythonProcess = spawn('python', [pythonScriptPath, inputFilePath, outputFilePath, jsonConfig]);
+
+  // التقاط مخرجات بايثون لطباعتها في الكونسول
+  pythonProcess.stdout.on('data', (data) => {
+    console.log(`Python: ${data}`);
+  });
+
+  // التقاط أخطاء بايثون
+  pythonProcess.stderr.on('data', (data) => {
+    console.error(`Python Error: ${data}`);
+  });
+
+  // عندما ينتهي بايثون من المعالجة
+  pythonProcess.on('close', (code) => {
+    if (code === 0 && fs.existsSync(outputFilePath)) {
+      res.status(200).json({ 
+        message: 'تم تطبيق الفلاتر بنجاح', 
+        processedFileUrl: `http://localhost:5000/uploads/${outputFileName}`,
+        processedFilePath: outputFilePath
+      });
+    } else {
+      res.status(500).json({ message: 'فشلت عملية تطبيق الفلاتر (Python Error)' });
+    }
+  });
+});
+
 module.exports = router;
 ```
 
@@ -33539,517 +33801,3 @@ module.exports = router;
 ## الملف: `gateway\src\routes\upload.js`
 
 ```javascript
-const express = require('express');
-const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const Asset = require('../models/Asset');
-const authMiddleware = require('../middleware/authMiddleware'); // حارس البوابة
-
-// إعداد Multer لتحديد مسار واسم الملف المرفوع
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // سيتم الحفظ في مجلد uploads (تأكد من وجوده)
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ storage: storage });
-
-// مسار الرفع (محمي بـ authMiddleware)
-// POST /api/upload
-router.post('/', authMiddleware, upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'الرجاء اختيار ملف للرفع' });
-    }
-
-    // إنشاء سجل الملف في قاعدة البيانات (MongoDB) وربطه بالمستخدم
-    const newAsset = new Asset({
-      originalName: req.file.originalname,
-      filename: req.file.filename,
-      path: req.file.path,
-      mimeType: req.file.mimetype,
-      size: req.file.size,
-      owner: req.user.userId, // حصلنا على userId من التوكن بفضل authMiddleware
-      assetType: 'raw' // لأنه ملف خام تم رفعه للتو
-    });
-
-    await newAsset.save();
-    
-    // طباعة للتأكد في الكونسول الخلفي
-    console.log('✅ تم حفظ الملف في قاعدة البيانات، ID:', newAsset._id);
-
-    res.status(201).json({
-      message: 'تم رفع الملف وحفظه في قاعدة البيانات بنجاح',
-      asset: newAsset, // البيانات الكاملة
-      assetId: newAsset._id, // نرسل الـ ID بشكل صريح لتلتقطه الداشبورد
-      filePath: req.file.path // المسار الذي تحتاجه واجهة React
-    });
-
-  } catch (error) {
-    console.error('Upload Error:', error);
-    res.status(500).json({ message: 'خطأ في الخادم أثناء حفظ الملف' });
-  }
-});
-
-module.exports = router;
-```
-
----
-
-## الملف: `gateway\src\services\websocket.js`
-
-```javascript
-let io;
-
-const initWebSocket = (socketIoInstance) => {
-  io = socketIoInstance;
-
-  io.on('connection', (socket) => {
-    console.log(`[WS] Client connected: ${socket.id}`);
-
-    // Client subscribes to a specific job to get its progress
-    socket.on('subscribe:job', (jobId) => {
-      const roomName = `job:${jobId}`;
-      socket.join(roomName);
-      console.log(`[WS] Socket ${socket.id} joined room ${roomName}`);
-    });
-
-    socket.on('unsubscribe:job', (jobId) => {
-      socket.leave(`job:${jobId}`);
-    });
-
-    socket.on('disconnect', () => {
-      console.log(`[WS] Client disconnected: ${socket.id}`);
-    });
-  });
-};
-
-// Functions to be called by the Worker to broadcast updates
-const emitJobProgress = (jobId, progress, stage, eta) => {
-  if (io) {
-    // بث عام لتحديثات التقدم
-    io.emit('jobProgress', { jobId, progress, stage, eta });
-  }
-};
-
-const emitJobCompleted = (jobId, result) => {
-  if (io) {
-    // بث عام باكتمال المهمة
-    io.emit('jobCompleted', { jobId, result });
-  }
-};
-
-const emitJobFailed = (jobId, error) => {
-  if (io) {
-    // بث عام في حال الفشل
-    io.emit('jobFailed', { jobId, error });
-  }
-};
-
-module.exports = {
-  initWebSocket,
-  emitJobProgress,
-  emitJobCompleted,
-  emitJobFailed
-};
-```
-
----
-
-## الملف: `gateway\src\workers\aiWorker.js`
-
-```javascript
-const { Worker } = require('bullmq');
-const axios = require('axios');
-const { connection } = require('../config/queue');
-const { emitJobProgress, emitJobCompleted, emitJobFailed } = require('../services/websocket');
-
-const AI_ENGINE_URL = process.env.AI_ENGINE_URL || 'http://localhost:8000';
-
-const initWorker = () => {
-  console.log('[Worker] Starting AI Job Worker...');
-
-  const worker = new Worker('ai-processing', async (job) => {
-    console.log(`[Worker] Processing Job ${job.id} of type ${job.name}`);
-    
-    const { type, parameters, inputFileId } = job.data;
-    const currentJobType = type || job.name;
-    
-    console.log(`[Worker] File Path to process: ${inputFileId}`); 
-    
-    try {
-      emitJobProgress(job.id, 5, 'Initializing models...', 'Calculating');
-      await job.updateProgress(5);
-
-      const actualFilePath = inputFileId || (parameters && parameters.input_file) || "";
-      
-      console.log(`[Worker] Actual File Path being sent to Python: "${actualFilePath}"`);
-
-      const response = await axios.post(`${AI_ENGINE_URL}/api/ai/process`, {
-        job_id: job.id ? job.id.toString() : `job_${Date.now()}`,
-        job_type: currentJobType,
-        parameters: parameters || {},
-        input_file: actualFilePath
-      });
-
-      for (let i = 10; i <= 90; i += 20) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        emitJobProgress(job.id, i, `Processing stage ${i/10}...`, `${100 - i}s`);
-        await job.updateProgress(i);
-      }
-
-      emitJobProgress(job.id, 100, 'Finalizing and saving...', '0s');
-      await job.updateProgress(100);
-
-      let finalTracks = [];
-      
-      if (currentJobType === 'denoise') {
-         finalTracks = [
-           { id: 'track-clean', name: '🎙️ Studio Enhanced (AI)', src: 'http://localhost:5000/outputs/safe_input_clean.flac', type: 'cleaned' }
-         ];
-      } else {
-         finalTracks = [
-           { id: 'track-vocals', name: '🎤 Vocals', src: 'http://localhost:5000/outputs/vocals.flac' },
-           { id: 'track-drums', name: '🥁 Drums ', src: 'http://localhost:5000/outputs/drums.flac' },
-           { id: 'track-bass', name: '🎸 Bass ', src: 'http://localhost:5000/outputs/bass.flac' },
-           { id: 'track-other', name: '🎹 Other ', src: 'http://localhost:5000/outputs/other.flac' }
-         ];
-      }
-
-      const result = {
-        message: currentJobType === 'denoise' ? 'تم إعادة بناء الصوت وتنقيته بجودة الاستوديو الأسطورية! 🎙️✨' : 'تم فصل وضغط مسارات الاستوديو بنجاح! 🚀',
-        tracks: finalTracks
-      };
-
-      emitJobCompleted(job.id, result);
-      return result;
-
-    } catch (error) {
-      console.error(`[Worker] Job ${job.id} failed:`, error.message);
-      emitJobFailed(job.id, error.message);
-      throw error; 
-    }
-  }, { 
-    connection,
-    concurrency: 5 
-  });
-
-  worker.on('failed', (job, err) => {
-    console.log(`[Worker] Job ${job.id} permanently failed with error ${err.message}`);
-  });
-};
-
-module.exports = { initWorker };
-```
-
----
-
-## الملف: `uploads\audio-1783648716551-511077011.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783683113938-242827333.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783684494751-470832762.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783685074619-12379440.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783687451822-725993962.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783690262064-640913024.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783690681760-12083783.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783690849468-442374329.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783696401205-676559314.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783699228892-388595909.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783699671896-803504826.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783699707459-846697743.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783713127512-341916353.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783716767410-402174561.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783717746720-753517621.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783718179832-123495292.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783721210252-988455973.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783721247128-918043618.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783721412191-147495413.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783721825324-196431754.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783721904556-159296542.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783724199229-774922831.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783724267448-850507285.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783724688943-163982677.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783724701364-470981652.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783727376956-893463100.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783727636217-126846640.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783779040277-766144752.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783788431874-953177223.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783789192877-824147807.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783789695559-484254404.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1783790656149-845908337.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1784196004246-84623661.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1784198201292-187883577.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1784198464489-135414604.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1784199032289-182929544.wav`
-
-```wav
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0x9f in position 4: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1784199077904-666113812.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-
-## الملف: `uploads\audio-1784200031823-521962524.mp3`
-
-```mp3
-// تعذر قراءة الملف: 'utf-8' codec can't decode byte 0xff in position 1024: invalid start byte
-```
-
----
-

@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 
 export const useEffectsStore = create((set) => ({
-  // Active track being edited in the rack
-  activeTrackId: 'track_1', 
+  activeTrackId: 'master_track', 
   
-  // Store effects per track: { track_1: [effect1, effect2], track_2: [] }
+  // 🌟 State جديدة لحفظ الجزء المحدد من الصوت (Regions)
+  selectedRegion: null, // سيحتوي على: { trackId, start, end }
+  
   trackEffects: {
     'track_1': [
       { id: 'eff_1', name: 'Compressor', category: 'amplitude_compression', bypass: false, locked: false, isAi: false },
@@ -12,11 +13,13 @@ export const useEffectsStore = create((set) => ({
     ]
   },
   
-  // State for the Effect Window Modal
-  editingEffect: null, // Holds the effect object currently being edited
+  editingEffect: null, 
 
   // Actions
   setActiveTrack: (trackId) => set({ activeTrackId: trackId }),
+  
+  // 🌟 أكشن جديد لتحديث الجزء المحدد
+  setSelectedRegion: (region) => set({ selectedRegion: region }),
   
   addEffect: (trackId, effect) => set((state) => ({
     trackEffects: {

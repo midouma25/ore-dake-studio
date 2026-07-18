@@ -98,18 +98,52 @@ class ProfessionalEffectsRack:
             print(f"   {i+1}. {p.__class__.__name__}")
         
     def process(self, input_path, output_path):
-        print(f"\n🚀 جاري معالجة الملف: {os.path.basename(input_path)}")
-        audio, sample_rate = sf.read(input_path)
+        import subprocess # نضعه هنا لضمان توفره
         
+        print(f"\n🚀 جاري معالجة الملف: {os.path.basename(input_path)}")
+        
+        # 🌟 خطوة الحماية العبقرية: تحويل أي ملف إلى WAV نقي ومفهوم برمجياً 🌟
+        safe_wav = input_path + "_safe.wav"
+        try:
+            import imageio_ffmpeg
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except ImportError:
+            ffmpeg_exe = "ffmpeg" # الاعتماد على النظام في حال عدم وجود المكتبة
+
+        print("🔄 جاري تهيئة الملف ليكون بصيغة ستوديو قياسية...")
+        try:
+            # نجبر الملف أن يتحول إلى PCM WAV بتردد 44100Hz
+            subprocess.run([
+                ffmpeg_exe, "-y", "-i", input_path,
+                "-ar", "44100", "-c:a", "pcm_s16le", safe_wav
+            ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # الآن نقرأ الملف النظيف والمضمون 100%
+            audio, sample_rate = sf.read(safe_wav)
+        except Exception as e:
+            print(f"⚠️ لم نتمكن من تهيئة الملف، سنحاول قراءته مباشرة... {e}")
+            audio, sample_rate = sf.read(input_path)
+        
+        # تجهيز الصوت لمكتبة Pedalboard
         if len(audio.shape) == 1:
             audio = audio.reshape(1, -1)
         else:
             audio = audio.T
             
+        print("🎛️ جاري تطبيق الفلاتر الصوتية...")
         effected_audio = self.board(audio, sample_rate)
         
+        # حفظ النتيجة
         sf.write(output_path, effected_audio.T, sample_rate)
-        print(f"✨ اكتمل التصدير بجودة VST المطلقة: {output_path}\n" + "="*50)
+        
+        # حذف الملف المؤقت للتنظيف
+        if os.path.exists(safe_wav):
+            try:
+                os.remove(safe_wav)
+            except:
+                pass
+                
+        print(f"✨ اكتمل التصدير بنجاح: {output_path}\n" + "="*50)
 
 
 if __name__ == "__main__":

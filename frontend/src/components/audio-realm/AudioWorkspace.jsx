@@ -7,6 +7,7 @@ import { AIAudioRack } from './ai-panel/AI_Audio_Rack';
 import { EffectsRack } from './effects-rack/EffectsRack';
 import { AudioRealm } from '../dashboard/AudioRealm'; 
 import { Scissors, ZoomIn, Maximize, Download, Upload, Save, Undo, Redo, FileAudio, Settings } from 'lucide-react';
+import { useEffectsStore } from '../../store/useEffectsStore'; // 🌟 إضافة الستور
 
 const socket = io('http://localhost:5000');
 
@@ -15,19 +16,42 @@ export const AudioWorkspace = () => {
   const navigate = useNavigate();
   const { originalTrackUrl, serverFilePath, fileName } = location.state || {};
 
-  const [separatedTracks, setSeparatedTracks] = useState([]);
+  // 🌟 Merged original track and processed tracks in one professional State 🌟
+  const [projectTracks, setProjectTracks] = useState([]);
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressMessage, setProgressMessage] = useState('');
-  
   const [activeJobType, setActiveJobType] = useState(null);
+
+  const { setActiveTrack } = useEffectsStore(); // 🌟 To set default track
+
+  // Initialize Master track when opening page
+  useEffect(() => {
+    if (originalTrackUrl) {
+      setProjectTracks([{ 
+        id: 'master_track', 
+        name: fileName || 'Master Track', 
+        src: originalTrackUrl, 
+        type: 'original' 
+      }]);
+      setActiveTrack('master_track'); // Make it active by default
+    }
+  }, [originalTrackUrl, fileName, setActiveTrack]);
 
   useEffect(() => {
     socket.on('jobCompleted', (data) => {
       console.log('✅ المهمة انتهت، تم استلام البيانات:', data);
-      const tracks = data.tracks || (data.result && data.result.tracks);
-      if (tracks) {
+      const incomingTracks = data.tracks || (data.result && data.result.tracks);
+      
+      if (incomingTracks) {
+        // 🌟 إعطاء ID فريد لكل مسار جديد لتسهيل حذفه والتحكم به
+        const newTracks = incomingTracks.map((t, i) => ({
+          ...t,
+          id: `track_${Date.now()}_${i}`
+        }));
+        
+        setProjectTracks(prev => [...prev, ...newTracks]);
         setIsProcessing(false);
-        setSeparatedTracks(tracks);
         setProgressMessage('');
         setActiveJobType(null);
       }
@@ -51,11 +75,20 @@ export const AudioWorkspace = () => {
     };
   }, []);
 
+  // 🌟 دالة حذف المسارات من المخطط الزمني 🌟
+  const handleDeleteTrack = (trackId) => {
+    if (trackId === 'master_track') {
+      const confirmDelete = window.confirm("Are you sure you want to delete the main path? This action cannot be undone.");
+      if (!confirmDelete) return;
+    }
+    setProjectTracks(prev => prev.filter(t => t.id !== trackId));
+  };
+
   const handleStemSeparation = async () => {
-    if (!serverFilePath) return alert("الملف الأصلي غير متوفر على الخادم.");
+    if (!serverFilePath) return alert("The original file is not available on the server.");
     setIsProcessing(true);
     setActiveJobType('stem');
-    setProgressMessage('جاري تهيئة كرت الشاشة (RTX)...');
+    setProgressMessage('Initializing graphics card (RTX)...');
 
     try {
       await axios.post('http://localhost:5000/api/ai/jobs', {
@@ -72,25 +105,11 @@ export const AudioWorkspace = () => {
     }
   };
 
-
-// 🌟 دالة استقبال الملف المعالج من الرف 🌟
-  const handleEffectApplied = (processedUrl) => {
-    const newTrack = {
-      name: `FX Rack Output (${fileName})`,
-      src: processedUrl,
-      type: 'processed' // لإعطائه لوناً مختلفاً في WaveSurfer
-    };
-    
-    // إضافة المسار الجديد إلى قائمة المسارات الموجودة في الـ Timeline
-    setSeparatedTracks(prevTracks => [...prevTracks, newTrack]);
-  };
-
-
   const handleDeepClean = async () => {
-    if (!serverFilePath) return alert("الملف الأصلي غير متوفر على الخادم.");
+    if (!serverFilePath) return alert("The original file is not available on the server.");
     setIsProcessing(true);
     setActiveJobType('denoise');
-    setProgressMessage('جاري تهيئة محرك التنظيف (DeepFilterNet)...');
+    setProgressMessage('Initializing denoising engine (DeepFilterNet)...');
 
     try {
       await axios.post('http://localhost:5000/api/ai/jobs', {
@@ -108,7 +127,7 @@ export const AudioWorkspace = () => {
   };
 
   const handleDownload = (url, name) => {
-    if (!url) return alert("الملف غير جاهز بعد!");
+    if (!url) return alert("The file is not ready yet!");
     const link = document.createElement('a');
     link.href = url;
     link.download = name;
@@ -119,9 +138,12 @@ export const AudioWorkspace = () => {
 
   if (!originalTrackUrl) return <Navigate to="/" replace />;
 
+  const generatedTracks = projectTracks.filter(t => t.id !== 'master_track');
+
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-bgPrimary text-textPrimary select-none">
       
+      {/* 🌟 شريط القوائم العلوي (DAW Menu Bar) 🌟 */}
       <div className="h-10 bg-[#0a0a0a] border-b border-borderColor flex items-center px-4 text-sm z-50">
         <div className="flex items-center gap-1 font-medium">
           
@@ -137,9 +159,9 @@ export const AudioWorkspace = () => {
               </button>
               
               <button 
-                onClick={() => separatedTracks.forEach(t => handleDownload(t.src, t.name))}
-                disabled={separatedTracks.length === 0}
-                className={`w-full text-left px-4 py-2 flex items-center gap-3 ${separatedTracks.length > 0 ? 'hover:bg-accentPrimary hover:text-bgPrimary' : 'opacity-50 cursor-not-allowed'}`}
+                onClick={() => generatedTracks.forEach(t => handleDownload(t.src, t.name))}
+                disabled={generatedTracks.length === 0}
+                className={`w-full text-left px-4 py-2 flex items-center gap-3 ${generatedTracks.length > 0 ? 'hover:bg-accentPrimary hover:text-bgPrimary' : 'opacity-50 cursor-not-allowed'}`}
               >
                 <Download className="w-4 h-4" /> Export All Stems
               </button>
@@ -210,16 +232,12 @@ export const AudioWorkspace = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-20">
-            <AudioRealm tracks={separatedTracks} originalTrackUrl={originalTrackUrl} />
+            {/* 🌟 نمرر المسارات ودالة الحذف 🌟 */}
+            <AudioRealm tracks={projectTracks} onDeleteTrack={handleDeleteTrack} />
           </div>
         </div>
 
-{/* 3. الجناح الأيمن: رف المؤثرات */}
-        <EffectsRack 
-          serverFilePath={serverFilePath} 
-          fileName={fileName}
-          onProcessComplete={handleEffectApplied} // 🌟 تمرير الدالة للرف
-        />
+        <EffectsRack />
 
       </div>
     </div>
