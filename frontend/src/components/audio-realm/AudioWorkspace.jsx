@@ -26,17 +26,18 @@ export const AudioWorkspace = () => {
   const { setActiveTrack } = useEffectsStore(); // 🌟 To set default track
 
   // Initialize Master track when opening page
-  useEffect(() => {
+useEffect(() => {
     if (originalTrackUrl) {
       setProjectTracks([{ 
         id: 'master_track', 
         name: fileName || 'Master Track', 
         src: originalTrackUrl, 
+        serverPath: serverFilePath, // 🌟 السطر السحري الجديد
         type: 'original' 
       }]);
-      setActiveTrack('master_track'); // Make it active by default
+      setActiveTrack('master_track');
     }
-  }, [originalTrackUrl, fileName, setActiveTrack]);
+  }, [originalTrackUrl, fileName, serverFilePath, setActiveTrack]);
 
   useEffect(() => {
     socket.on('jobCompleted', (data) => {
@@ -104,6 +105,20 @@ export const AudioWorkspace = () => {
       setActiveJobType(null);
     }
   };
+
+
+
+  const handleProcessComplete = (processedUrl, processedPath) => {
+    setProjectTracks(prev => [...prev, {
+        id: `track_fx_${Date.now()}`,
+        name: `${fileName} (Processed)`,
+        src: processedUrl,
+        serverPath: processedPath,
+        type: 'processed'
+    }]);
+};
+
+
 
   const handleDeepClean = async () => {
     if (!serverFilePath) return alert("The original file is not available on the server.");
@@ -231,13 +246,18 @@ export const AudioWorkspace = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-20">
-            {/* 🌟 نمرر المسارات ودالة الحذف 🌟 */}
-            <AudioRealm tracks={projectTracks} onDeleteTrack={handleDeleteTrack} />
-          </div>
-        </div>
+<div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 pb-20">
+  <AudioRealm tracks={projectTracks} onDeleteTrack={handleDeleteTrack} />
+</div>
+</div>
 
-        <EffectsRack />
+{/* 🌟 تم تمرير الخصائص المفقودة للرف 🌟 */}
+<EffectsRack 
+    tracks={projectTracks} 
+    serverFilePath={serverFilePath}
+    fileName={fileName}
+    onProcessComplete={handleProcessComplete} 
+/>
 
       </div>
     </div>

@@ -93,6 +93,18 @@ export const AudioRealm = ({ tracks = [], onDeleteTrack }) => {
     };
   }, [tracks, setActiveTrack, setSelectedRegion]);
 
+
+// ❌ احذف هذا الكود بالكامل من AudioRealm.jsx
+  useEffect(() => {
+    const handlePauseMaster = () => {
+      if (wavesurferRef.current?.isPlaying()) {
+        wavesurferRef.current.pause();
+      }
+    };
+    window.addEventListener('pause-master-audio', handlePauseMaster);
+    return () => window.removeEventListener('pause-master-audio', handlePauseMaster);
+  }, []);
+
   const togglePlay = () => {
     const willPlay = !isPlaying;
     setIsPlaying(willPlay);

@@ -65,42 +65,36 @@ router.get('/jobs/:id', async (req, res) => {
   }
 });
 
-// =======================================================
-// 🌟 مسار تشغيل رف المؤثرات في بايثون (Effects Rack) 🌟
-// =======================================================
+// 🌟 المسار المحدث لتطبيق الفلاتر (كامل أو جزئي) 🌟
 router.post('/apply-rack', authMiddleware, (req, res) => {
-  const { inputFilePath, effectsChain } = req.body;
+  const { inputFilePath, effectsChain, isRegion, start_time, end_time } = req.body;
 
   if (!inputFilePath || !effectsChain || effectsChain.length === 0) {
     return res.status(400).json({ message: 'بيانات مفقودة أو الرف فارغ' });
   }
 
-  // تحديد اسم ومسار الملف بعد المعالجة
   const outputFileName = `processed_${Date.now()}.wav`;
   const outputFilePath = path.join(process.cwd(), 'uploads', outputFileName);
-
-  // مسار ملف البايثون (تأكد أن ai-engine بجوار gateway)
   const pythonScriptPath = path.resolve(__dirname, '../../../ai-engine/ProfessionalEffectsRack.py');
   
-  // تحويل الفلاتر إلى نص لإرساله لبايثون
   const jsonConfig = JSON.stringify(effectsChain);
+  
+  // تحديد المتغيرات الجديدة
+  const mode = isRegion ? 'region' : 'full';
+  const startTimeStr = start_time ? start_time.toString() : "0";
+  const durationStr = (start_time !== undefined && end_time !== undefined) ? (end_time - start_time).toString() : "0";
 
-  console.log('🎧 جاري إرسال الفلاتر إلى محرك بايثون...');
+  console.log(`🎧 جاري المعالجة وضع (${mode})...`);
 
-  // تشغيل سكريبت بايثون
-  const pythonProcess = spawn('python', [pythonScriptPath, inputFilePath, outputFilePath, jsonConfig]);
+  // تمرير الترتيب الصحيح لبايثون
+  const pythonProcess = spawn('python', [
+      pythonScriptPath, inputFilePath, outputFilePath, jsonConfig, 
+      startTimeStr, durationStr, mode
+  ]);
 
-  // التقاط مخرجات بايثون لطباعتها في الكونسول
-  pythonProcess.stdout.on('data', (data) => {
-    console.log(`Python: ${data}`);
-  });
+  pythonProcess.stdout.on('data', (data) => console.log(`Python: ${data}`));
+  pythonProcess.stderr.on('data', (data) => console.error(`Python Error: ${data}`));
 
-  // التقاط أخطاء بايثون
-  pythonProcess.stderr.on('data', (data) => {
-    console.error(`Python Error: ${data}`);
-  });
-
-  // عندما ينتهي بايثون من المعالجة
   pythonProcess.on('close', (code) => {
     if (code === 0 && fs.existsSync(outputFilePath)) {
       res.status(200).json({ 
@@ -112,6 +106,35 @@ router.post('/apply-rack', authMiddleware, (req, res) => {
       res.status(500).json({ message: 'فشلت عملية تطبيق الفلاتر (Python Error)' });
     }
   });
+});
+
+// 🌟 المسار المحدث للمعاينة اللحظية 🌟
+router.post('/preview-rack', (req, res) => {
+    const { file_path, start_time, end_time, effects } = req.body;
+    
+    if (!file_path || !effects) return res.status(400).json({ error: 'Missing Data' });
+
+    const duration = end_time - start_time;
+    const outputFileName = `preview_${Date.now()}.wav`;
+    const outputPath = path.join(__dirname, '../../uploads', outputFileName); 
+    const pythonScriptPath = path.join(__dirname, '../../../ai-engine/ProfessionalEffectsRack.py');
+
+    // لاحظ إضافة كلمة 'preview' في النهاية
+    const pythonProcess = spawn('python', [
+        pythonScriptPath, file_path, outputPath, JSON.stringify(effects),
+        start_time.toString(), duration.toString(), 'preview'
+    ]);
+
+    pythonProcess.stdout.on('data', (data) => console.log(`[Preview]: ${data.toString()}`));
+    pythonProcess.stderr.on('data', (data) => console.error(`[Preview Err]: ${data.toString()}`));
+
+    pythonProcess.on('close', (code) => {
+        if (code === 0 && fs.existsSync(outputPath)) {
+            res.json({ preview_url: `http://localhost:5000/uploads/${outputFileName}` });
+        } else {
+            res.status(500).json({ error: 'Processing failed' });
+        }
+    });
 });
 
 module.exports = router;
